@@ -636,11 +636,59 @@ code {
 }
 
 .invitation-card {
+  position: relative;
+  overflow: hidden;
   border: 1px solid var(--border);
   border-radius: 8px;
   padding: 18px;
   background: var(--paper);
   box-shadow: 0 10px 30px rgba(79, 61, 39, 0.08);
+}
+
+.invitation-card::before {
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 6px;
+  content: "";
+}
+
+.invitation-card.status-yes {
+  border-color: rgba(109, 140, 99, 0.34);
+  background: linear-gradient(135deg, #fffdf8 0%, #f3f8ef 100%);
+}
+
+.invitation-card.status-yes::before {
+  background: var(--leaf);
+}
+
+.invitation-card.status-yes .invitation-card-header p {
+  color: #54764a;
+}
+
+.invitation-card.status-no {
+  border-color: rgba(198, 111, 69, 0.34);
+  background: linear-gradient(135deg, #fffdf8 0%, #fff0e8 100%);
+}
+
+.invitation-card.status-no::before {
+  background: var(--terracotta);
+}
+
+.invitation-card.status-no .invitation-card-header p {
+  color: #b35f39;
+}
+
+.invitation-card.status-pending {
+  border-color: rgba(125, 111, 95, 0.25);
+  background: linear-gradient(135deg, #fffdf8 0%, #f7f1e8 100%);
+}
+
+.invitation-card.status-pending::before {
+  background: #9d8d78;
+}
+
+.invitation-card.status-pending .invitation-card-header p {
+  color: #736553;
 }
 
 .invitation-card.is-dragging {

@@ -28,6 +28,18 @@ function formatAnswer(answer) {
   return "Fără răspuns";
 }
 
+function getAnswerStatusClass(answer) {
+  if (answer === "yes") {
+    return "status-yes";
+  }
+
+  if (answer === "no") {
+    return "status-no";
+  }
+
+  return "status-pending";
+}
+
 function formatDate(value) {
   if (!value) {
     return "-";
@@ -307,7 +319,7 @@ function renderAdminDashboard({ summary, invitations }, settings) {
   const cards = invitations
     .map(
       (invitation) => `
-        <article class="invitation-card" data-id="${invitation.id}" draggable="true">
+        <article class="invitation-card ${getAnswerStatusClass(invitation.answer)}" data-id="${invitation.id}" draggable="true">
           <header class="invitation-card-header">
             <button class="drag-handle" type="button" aria-label="Mută invitația">Mută</button>
             <div>
