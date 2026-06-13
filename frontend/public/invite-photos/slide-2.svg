@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 760" role="img" aria-labelledby="title desc">
+  <title id="title">Vama Veche</title>
+  <desc id="desc">Imagine placeholder cu terasa de vara si mare.</desc>
+  <rect width="1200" height="760" fill="#fff7e8"/>
+  <rect width="1200" height="330" fill="#d9f0ef"/>
+  <path d="M0 330h1200v130H0z" fill="#2d8893" opacity=".78"/>
+  <path d="M0 440c142-28 264 28 410 0 150-29 274-67 430-22 132 38 232 16 360-27v369H0z" fill="#ead9bd"/>
+  <path d="M190 336h470l-58 96H248z" fill="#c66f45"/>
+  <path d="M256 432h342v168H256z" fill="#fffdf8"/>
+  <path d="M216 600h430v34H216z" fill="#c9a777"/>
+  <path d="M762 292c54 30 102 30 156 0v268H762z" fill="#6d8c63" opacity=".85"/>
+  <circle cx="870" cy="250" r="118" fill="#6d8c63" opacity=".65"/>
+  <text x="80" y="108" fill="#34291f" font-family="Georgia, serif" font-size="52">Vama Veche</text>
+  <text x="82" y="166" fill="#7d6f5f" font-family="Arial, sans-serif" font-size="28">vara, nisip, mare</text>
+</svg>

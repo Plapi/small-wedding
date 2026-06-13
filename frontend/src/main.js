@@ -6,6 +6,11 @@ const ADMIN_TOKEN_STORAGE_KEY = "small-wedding-admin-token";
 const params = new URLSearchParams(window.location.search);
 const inviteKey = params.get("key");
 const app = document.querySelector("#app");
+const INVITE_PHOTOS = [
+  "/invite-photos/slide-1.svg",
+  "/invite-photos/slide-2.svg",
+  "/invite-photos/slide-3.svg",
+];
 
 function escapeHtml(value) {
   return String(value ?? "")
@@ -58,6 +63,16 @@ function renderPartySizeOptions(selectedValue = 1) {
     .join("");
 }
 
+function renderPhotoSlides() {
+  return INVITE_PHOTOS.map(
+    (src, index) => `
+      <figure class="photo-slide">
+        <img src="${src}" alt="Fotografie invitație ${index + 1}" loading="${index === 0 ? "eager" : "lazy"}" />
+      </figure>
+    `
+  ).join("");
+}
+
 function adminHeaders() {
   return {
     "Content-Type": "application/json",
@@ -108,14 +123,46 @@ function renderInvitationPage(invitation) {
   app.innerHTML = `
     <main class="invite-page">
       <section class="invite-card" aria-labelledby="inviteTitle">
-        <p class="eyebrow">Vama Veche · Sandalandala</p>
-        <h1 id="inviteTitle">Invitație Cununie în Vamă</h1>
-        <h2>Adrian & Liliana</h2>
+        <header class="invite-hero">
+          <p class="eyebrow">Invitație cununie</p>
+          <h1 id="inviteTitle">Adrian & Liliana</h1>
+        </header>
+
+        <section class="photo-slider" aria-label="Fotografii Adrian și Liliana">
+          <div id="photoTrack" class="photo-track">
+            ${renderPhotoSlides()}
+          </div>
+        </section>
 
         <div class="guest-note">
           <p>Bună, ${escapeHtml(invitation.guest_name)}!</p>
           <p>Ne-ar bucura să fii alături de noi, cu nisip sub tălpi și mare aproape.</p>
         </div>
+
+        <section class="invite-section date-section">
+          <span class="section-kicker">Data</span>
+          <h2>25 Iulie 2026</h2>
+        </section>
+
+        <section class="invite-section location-section">
+          <span class="section-kicker">Cununia oficială</span>
+          <h2>Mangalia - Casa Căsătoriilor</h2>
+          <p>Ora 16:00</p>
+          <div class="location-actions" aria-label="Locație cununie oficială">
+            <a href="https://maps.app.goo.gl/1ue5M5tJtGqJUBTD9" target="_blank" rel="noreferrer">Google Maps</a>
+            <a href="https://waze.com/ul/hsxu34qus4" target="_blank" rel="noreferrer">Waze</a>
+          </div>
+        </section>
+
+        <section class="invite-section location-section">
+          <span class="section-kicker">Petrecerea</span>
+          <h2>Vama Veche - Sandalandia</h2>
+          <p>Ora 18:00</p>
+          <div class="location-actions" aria-label="Locație petrecere">
+            <a href="https://maps.app.goo.gl/d84PRW6grG4vp3sj6" target="_blank" rel="noreferrer">Google Maps</a>
+            <a href="https://waze.com/ul/hsxu2fk297" target="_blank" rel="noreferrer">Waze</a>
+          </div>
+        </section>
 
         <form id="rsvpForm" class="rsvp-form">
           <fieldset>
@@ -174,6 +221,23 @@ function renderInvitationPage(invitation) {
 
   const form = document.querySelector("#rsvpForm");
   const submitBtn = document.querySelector("#submitBtn");
+  const photoTrack = document.querySelector("#photoTrack");
+  let slideIndex = 0;
+
+  if (photoTrack) {
+    window.setInterval(() => {
+      const slides = photoTrack.querySelectorAll(".photo-slide");
+      if (!slides.length) {
+        return;
+      }
+
+      slideIndex = (slideIndex + 1) % slides.length;
+      photoTrack.scrollTo({
+        left: slides[slideIndex].offsetLeft,
+        behavior: "smooth",
+      });
+    }, 4200);
+  }
 
   form.onchange = () => {
     const answer = new FormData(form).get("answer");

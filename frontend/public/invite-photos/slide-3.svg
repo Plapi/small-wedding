@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 760" role="img" aria-labelledby="title desc">
+  <title id="title">Seara de petrecere</title>
+  <desc id="desc">Imagine placeholder cu lumini calde de petrecere pe plaja.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" x2="0" y1="0" y2="1">
+      <stop offset="0" stop-color="#4379a6"/>
+      <stop offset="0.62" stop-color="#d9f0ef"/>
+      <stop offset="1" stop-color="#ead9bd"/>
+    </linearGradient>
+  </defs>
+  <rect width="1200" height="760" fill="url(#bg)"/>
+  <path d="M0 494c130-45 270 30 430-10 164-41 308-86 470-35 110 34 196 18 300-20v331H0z" fill="#ead9bd"/>
+  <path d="M120 210c170 72 340 72 510 0s340-72 510 0" fill="none" stroke="#fff7e8" stroke-width="6" opacity=".85"/>
+  <g fill="#f3c976">
+    <circle cx="178" cy="232" r="18"/>
+    <circle cx="350" cy="262" r="18"/>
+    <circle cx="520" cy="239" r="18"/>
+    <circle cx="690" cy="194" r="18"/>
+    <circle cx="862" cy="174" r="18"/>
+    <circle cx="1034" cy="193" r="18"/>
+  </g>
+  <path d="M376 456c82-76 170-76 252 0" fill="none" stroke="#34291f" stroke-width="16" stroke-linecap="round" opacity=".7"/>
+  <path d="M690 456c70-62 145-62 215 0" fill="none" stroke="#34291f" stroke-width="16" stroke-linecap="round" opacity=".55"/>
+  <text x="80" y="112" fill="#fffdf8" font-family="Georgia, serif" font-size="54">25 Iulie 2026</text>
+  <text x="82" y="170" fill="#fff7e8" font-family="Arial, sans-serif" font-size="28">ne vedem la petrecere</text>
+</svg>

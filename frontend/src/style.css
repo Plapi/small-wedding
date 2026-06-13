@@ -75,16 +75,16 @@ code {
 
 .invite-page {
   min-height: 100svh;
-  display: grid;
-  place-items: center;
-  padding: 28px 16px;
+  display: flex;
+  justify-content: center;
+  padding: 32px 16px 72px;
   background:
     linear-gradient(180deg, rgba(255, 253, 248, 0.2), rgba(255, 247, 232, 0.98)),
     radial-gradient(circle at 18% 16%, rgba(217, 240, 239, 0.9) 0 22%, transparent 44%),
     radial-gradient(circle at 88% 5%, rgba(255, 255, 255, 0.95) 0 14%, transparent 32%),
     linear-gradient(135deg, #fbf1dc 0%, #fffaf0 48%, #e0f1ef 100%);
   position: relative;
-  overflow: hidden;
+  overflow-x: hidden;
 }
 
 .invite-page::before,
@@ -118,12 +118,12 @@ code {
 }
 
 .invite-card {
-  width: min(560px, 100%);
+  width: min(720px, 100%);
   position: relative;
   z-index: 1;
   border: 1px solid rgba(255, 255, 255, 0.75);
   border-radius: 8px;
-  padding: clamp(26px, 6vw, 48px);
+  padding: clamp(22px, 5vw, 44px);
   background: rgba(255, 253, 248, 0.88);
   box-shadow: var(--shadow);
   backdrop-filter: blur(16px);
@@ -153,27 +153,62 @@ code {
   margin: 0;
   color: var(--ink);
   font-family: var(--serif);
-  font-size: clamp(2.35rem, 10vw, 4.4rem);
+  font-size: clamp(3rem, 12vw, 5.7rem);
   line-height: 0.98;
   font-weight: 500;
   letter-spacing: 0;
 }
 
 .invite-card h2 {
-  margin: 14px 0 0;
+  margin: 0;
   color: var(--sea);
   font-family: var(--serif);
-  font-size: clamp(1.45rem, 5vw, 2.2rem);
+  font-size: clamp(1.55rem, 5vw, 2.35rem);
   line-height: 1.08;
   font-weight: 500;
   letter-spacing: 0;
 }
 
+.photo-slider {
+  margin: clamp(26px, 6vw, 42px) calc(clamp(22px, 5vw, 44px) * -1) 0;
+  overflow: hidden;
+}
+
+.photo-track {
+  display: flex;
+  gap: 14px;
+  overflow: hidden;
+  padding: 0 clamp(22px, 5vw, 44px) 10px;
+  scroll-behavior: smooth;
+  scroll-snap-type: x mandatory;
+  pointer-events: none;
+  user-select: none;
+}
+
+.photo-slide {
+  flex: 0 0 min(620px, 82vw);
+  margin: 0;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.82);
+  border-radius: 8px;
+  aspect-ratio: 16 / 10;
+  background: var(--sand);
+  box-shadow: 0 18px 42px rgba(79, 61, 39, 0.13);
+  scroll-snap-align: center;
+}
+
+.photo-slide img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
 .guest-note {
   display: grid;
   gap: 8px;
-  margin: 26px auto 0;
-  max-width: 420px;
+  margin: clamp(28px, 6vw, 44px) auto 0;
+  max-width: 500px;
 }
 
 .guest-note p {
@@ -185,8 +220,77 @@ code {
   font-weight: 700;
 }
 
+.invite-section {
+  margin-top: clamp(28px, 6vw, 46px);
+  padding-top: clamp(24px, 5vw, 38px);
+  border-top: 1px solid var(--border);
+}
+
+.section-kicker {
+  display: block;
+  margin-bottom: 10px;
+  color: var(--terracotta);
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.11em;
+  text-transform: uppercase;
+}
+
+.date-section h2 {
+  color: var(--ink);
+  font-size: clamp(2rem, 8vw, 3.55rem);
+}
+
+.location-section {
+  text-align: left;
+}
+
+.location-section h2 {
+  color: var(--ink);
+  font-size: clamp(1.45rem, 5vw, 2.25rem);
+}
+
+.location-section p {
+  margin: 10px 0 0;
+  color: var(--sea);
+  font-weight: 800;
+}
+
+.location-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 18px;
+}
+
+.location-actions a {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  border: 1px solid rgba(45, 136, 147, 0.3);
+  border-radius: 8px;
+  padding: 0 16px;
+  color: var(--ink);
+  background: rgba(217, 240, 239, 0.62);
+  font-weight: 800;
+  text-decoration: none;
+  transition:
+    transform 160ms ease,
+    border-color 160ms ease,
+    background-color 160ms ease;
+}
+
+.location-actions a:hover {
+  transform: translateY(-1px);
+  border-color: rgba(45, 136, 147, 0.62);
+  background: rgba(217, 240, 239, 0.9);
+}
+
 .rsvp-form {
-  margin-top: 28px;
+  margin-top: clamp(30px, 7vw, 52px);
+  padding-top: clamp(26px, 5vw, 42px);
+  border-top: 1px solid var(--border);
 }
 
 .rsvp-form fieldset {
@@ -862,12 +966,31 @@ code {
 @media (max-width: 720px) {
   .invite-page {
     align-items: stretch;
-    padding: 14px;
+    padding: 14px 14px 54px;
   }
 
   .invite-card {
     align-self: center;
     padding: 24px 18px;
+  }
+
+  .photo-slider {
+    margin-right: -18px;
+    margin-left: -18px;
+  }
+
+  .photo-track {
+    padding-right: 18px;
+    padding-left: 18px;
+  }
+
+  .photo-slide {
+    flex-basis: 84vw;
+  }
+
+  .location-actions {
+    display: grid;
+    grid-template-columns: 1fr;
   }
 
   .rsvp-option {

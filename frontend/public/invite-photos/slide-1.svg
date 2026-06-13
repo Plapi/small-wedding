@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 760" role="img" aria-labelledby="title desc">
+  <title id="title">Plaja la apus</title>
+  <desc id="desc">Imagine placeholder cu mare, nisip si soare.</desc>
+  <defs>
+    <linearGradient id="sky" x1="0" x2="0" y1="0" y2="1">
+      <stop offset="0" stop-color="#d9f0ef"/>
+      <stop offset="0.55" stop-color="#fff7e8"/>
+      <stop offset="1" stop-color="#f0dcc0"/>
+    </linearGradient>
+  </defs>
+  <rect width="1200" height="760" fill="url(#sky)"/>
+  <circle cx="930" cy="170" r="86" fill="#f3c976"/>
+  <path d="M0 420c160-50 270 35 430-8 166-45 298-108 468-48 110 39 194 25 302-20v416H0z" fill="#2d8893" opacity=".82"/>
+  <path d="M0 475c134-36 276 28 420-2 170-36 272-68 440-20 118 34 226 18 340-30v337H0z" fill="#d9f0ef"/>
+  <path d="M0 560c196-32 376 20 592-12 210-31 366-1 608-54v266H0z" fill="#ead9bd"/>
+  <path d="M160 646c180-28 344-10 520-24 128-10 250-32 382-19" fill="none" stroke="#c9a777" stroke-width="12" stroke-linecap="round" opacity=".55"/>
+  <text x="80" y="110" fill="#34291f" font-family="Georgia, serif" font-size="58">Adrian &amp; Liliana</text>
+</svg>
