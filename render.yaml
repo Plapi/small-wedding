@@ -14,3 +14,5 @@ services:
         sync: false
       - key: WEB3FORMS_ACCESS_KEY_RENDER
         sync: false
+      - key: ADMIN_TOKEN
+        sync: false

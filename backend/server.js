@@ -17,6 +17,7 @@ const localWeb3FormsKey =
   process.env.WEB3FORMS_ACCESS_KEY_LOCAL || process.env.WEB3FORMS_ACCESS_KEY;
 const renderWeb3FormsKey =
   process.env.WEB3FORMS_ACCESS_KEY_RENDER || process.env.WEB3FORMS_ACCESS_KEY;
+const adminToken = process.env.ADMIN_TOKEN;
 
 app.use(cors());
 app.use(express.json());
@@ -55,6 +56,44 @@ app.get("/api/invitations/:key", (req, res) => {
   }
 
   res.json(row);
+});
+
+function isAdminRequest(req) {
+  const providedToken = req.get("x-admin-token");
+  return Boolean(adminToken && providedToken && providedToken === adminToken);
+}
+
+app.get("/api/admin/invitations", (req, res) => {
+  if (!isAdminRequest(req)) {
+    return res.status(401).json({ error: "Unauthorized" });
+  }
+
+  const invitations = db
+    .prepare(
+      `SELECT id, invite_key, guest_name, answer, created_at, answered_at
+       FROM invitations
+       ORDER BY created_at DESC, id DESC`
+    )
+    .all();
+
+  const summary = invitations.reduce(
+    (totals, invitation) => {
+      totals.total += 1;
+
+      if (invitation.answer === "yes") {
+        totals.yes += 1;
+      } else if (invitation.answer === "no") {
+        totals.no += 1;
+      } else {
+        totals.pending += 1;
+      }
+
+      return totals;
+    },
+    { total: 0, yes: 0, no: 0, pending: 0 }
+  );
+
+  res.json({ summary, invitations });
 });
 
 function getRequestHostname(req) {
