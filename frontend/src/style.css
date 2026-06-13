@@ -84,7 +84,7 @@ code {
     radial-gradient(circle at 88% 5%, rgba(255, 255, 255, 0.95) 0 14%, transparent 32%),
     linear-gradient(135deg, #fbf1dc 0%, #fffaf0 48%, #e0f1ef 100%);
   position: relative;
-  overflow-x: hidden;
+  overflow: hidden;
 }
 
 .invite-page::before,
@@ -170,23 +170,20 @@ code {
 }
 
 .photo-slider {
-  margin: clamp(26px, 6vw, 42px) calc(clamp(22px, 5vw, 44px) * -1) 0;
+  margin: clamp(26px, 6vw, 42px) 0 0;
   overflow: hidden;
+  border-radius: 8px;
 }
 
 .photo-track {
   display: flex;
-  gap: 14px;
-  overflow: hidden;
-  padding: 0 clamp(22px, 5vw, 44px) 10px;
-  scroll-behavior: smooth;
-  scroll-snap-type: x mandatory;
+  transition: transform 620ms ease;
   pointer-events: none;
   user-select: none;
 }
 
 .photo-slide {
-  flex: 0 0 min(620px, 82vw);
+  flex: 0 0 100%;
   margin: 0;
   overflow: hidden;
   border: 1px solid rgba(255, 255, 255, 0.82);
@@ -194,7 +191,6 @@ code {
   aspect-ratio: 16 / 10;
   background: var(--sand);
   box-shadow: 0 18px 42px rgba(79, 61, 39, 0.13);
-  scroll-snap-align: center;
 }
 
 .photo-slide img {
@@ -972,20 +968,6 @@ code {
   .invite-card {
     align-self: center;
     padding: 24px 18px;
-  }
-
-  .photo-slider {
-    margin-right: -18px;
-    margin-left: -18px;
-  }
-
-  .photo-track {
-    padding-right: 18px;
-    padding-left: 18px;
-  }
-
-  .photo-slide {
-    flex-basis: 84vw;
   }
 
   .location-actions {

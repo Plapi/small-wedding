@@ -232,10 +232,7 @@ function renderInvitationPage(invitation) {
       }
 
       slideIndex = (slideIndex + 1) % slides.length;
-      photoTrack.scrollTo({
-        left: slides[slideIndex].offsetLeft,
-        behavior: "smooth",
-      });
+      photoTrack.style.transform = `translateX(-${slideIndex * 100}%)`;
     }, 4200);
   }
 
