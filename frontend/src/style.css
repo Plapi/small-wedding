@@ -368,6 +368,10 @@ code {
   font-weight: 500;
 }
 
+.admin-panel p {
+  margin: 0;
+}
+
 .admin-form-grid {
   display: grid;
   grid-template-columns: minmax(190px, 1.2fr) minmax(190px, 1fr) minmax(150px, 0.7fr) auto;
@@ -492,6 +496,39 @@ code {
 .danger-btn {
   color: #fffdf8;
   background: #a9553b;
+}
+
+.admin-settings-panel {
+  margin-top: 20px;
+}
+
+.setting-toggle {
+  display: grid;
+  grid-template-columns: 44px 1fr;
+  gap: 12px;
+  align-items: start;
+  margin-top: 16px;
+  cursor: pointer;
+}
+
+.setting-toggle input {
+  width: 42px;
+  height: 24px;
+  margin: 2px 0 0;
+  accent-color: var(--sea);
+}
+
+.setting-toggle strong,
+.setting-toggle small {
+  display: block;
+}
+
+.setting-toggle strong {
+  color: var(--ink);
+}
+
+.setting-toggle small {
+  margin-top: 3px;
 }
 
 .admin-table tbody tr:last-child td {

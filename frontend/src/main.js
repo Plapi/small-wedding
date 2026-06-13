@@ -257,7 +257,7 @@ function renderAdminLogin(message = "") {
   };
 }
 
-function renderAdminDashboard({ summary, invitations }) {
+function renderAdminDashboard({ summary, invitations }, settings) {
   const rows = invitations
     .map(
       (invitation) => `
@@ -347,6 +347,22 @@ function renderAdminDashboard({ summary, invitations }) {
             ${rows || '<tr><td colspan="5">Nu există invitații încă.</td></tr>'}
           </tbody>
         </table>
+      </section>
+
+      <section class="admin-panel admin-settings-panel">
+        <div>
+          <h2>Setări</h2>
+          <p>Controlează opțiunile globale ale proiectului.</p>
+        </div>
+
+        <label class="setting-toggle">
+          <input id="emailEnabledToggle" type="checkbox" ${settings.rsvp_email_enabled ? "checked" : ""} />
+          <span>
+            <strong>Trimite email la RSVP</strong>
+            <small>Când este dezactivat, răspunsurile se salvează în baza de date, dar nu se trimite email.</small>
+          </span>
+        </label>
+        <p id="settingsStatus" class="status" role="status" aria-live="polite"></p>
       </section>
     </main>
   `;
@@ -449,6 +465,30 @@ function renderAdminDashboard({ summary, invitations }) {
       }
     };
   });
+
+  document.querySelector("#emailEnabledToggle").onchange = async (event) => {
+    const toggle = event.currentTarget;
+    const status = document.querySelector("#settingsStatus");
+
+    toggle.disabled = true;
+
+    try {
+      await adminRequest("/admin/settings", {
+        method: "PUT",
+        body: JSON.stringify({
+          rsvp_email_enabled: toggle.checked,
+        }),
+      });
+      status.className = "status status-success";
+      status.textContent = "Setarea a fost salvată.";
+    } catch (error) {
+      toggle.checked = !toggle.checked;
+      status.className = "status status-error";
+      status.textContent = error.message;
+    } finally {
+      toggle.disabled = false;
+    }
+  };
 }
 
 async function updateInvitationRow(id, row, button) {
@@ -478,24 +518,29 @@ async function loadAdminPage() {
     return;
   }
 
-  const response = await fetch(`${API_URL}/admin/invitations`, {
-    headers: {
-      "x-admin-token": token,
-    },
-  });
+  const headers = {
+    "x-admin-token": token,
+  };
+  const [invitationsResponse, settingsResponse] = await Promise.all([
+    fetch(`${API_URL}/admin/invitations`, { headers }),
+    fetch(`${API_URL}/admin/settings`, { headers }),
+  ]);
 
-  if (response.status === 401) {
+  if (invitationsResponse.status === 401 || settingsResponse.status === 401) {
     sessionStorage.removeItem(ADMIN_TOKEN_STORAGE_KEY);
     renderAdminLogin("Token invalid.");
     return;
   }
 
-  if (!response.ok) {
+  if (!invitationsResponse.ok || !settingsResponse.ok) {
     renderAdminLogin("Datele nu au putut fi încărcate.");
     return;
   }
 
-  renderAdminDashboard(await response.json());
+  const dashboard = await invitationsResponse.json();
+  const { settings } = await settingsResponse.json();
+
+  renderAdminDashboard(dashboard, settings);
 }
 
 if (window.location.pathname === "/admin") {

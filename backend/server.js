@@ -31,7 +31,17 @@ db.exec(`
     answer TEXT,
     answered_at TEXT
   );
+
+  CREATE TABLE IF NOT EXISTS app_settings (
+    key TEXT PRIMARY KEY,
+    value TEXT NOT NULL
+  );
 `);
+
+db.prepare("INSERT OR IGNORE INTO app_settings (key, value) VALUES (?, ?)").run(
+  "rsvp_email_enabled",
+  "true"
+);
 
 const invitationColumns = db.prepare("PRAGMA table_info(invitations)").all();
 
@@ -74,6 +84,24 @@ function sendDatabaseError(res, error) {
 
   console.error(error);
   return res.status(500).json({ error: "A apărut o eroare" });
+}
+
+function getSetting(key) {
+  return db.prepare("SELECT value FROM app_settings WHERE key = ?").get(key)?.value;
+}
+
+function setSetting(key, value) {
+  db.prepare(
+    `INSERT INTO app_settings (key, value)
+     VALUES (?, ?)
+     ON CONFLICT(key) DO UPDATE SET value = excluded.value`
+  ).run(key, value);
+}
+
+function getPublicSettings() {
+  return {
+    rsvp_email_enabled: getSetting("rsvp_email_enabled") !== "false",
+  };
 }
 
 app.post("/api/invitations", (req, res) => {
@@ -230,6 +258,24 @@ app.delete("/api/admin/invitations/:id", (req, res) => {
   res.json({ success: true });
 });
 
+app.get("/api/admin/settings", (req, res) => {
+  if (!isAdminRequest(req)) {
+    return res.status(401).json({ error: "Unauthorized" });
+  }
+
+  res.json({ settings: getPublicSettings() });
+});
+
+app.put("/api/admin/settings", (req, res) => {
+  if (!isAdminRequest(req)) {
+    return res.status(401).json({ error: "Unauthorized" });
+  }
+
+  setSetting("rsvp_email_enabled", req.body.rsvp_email_enabled ? "true" : "false");
+
+  res.json({ success: true, settings: getPublicSettings() });
+});
+
 function getRequestHostname(req) {
   const origin = req.get("origin") || req.get("referer");
 
@@ -303,18 +349,23 @@ app.post("/api/rsvp", async (req, res) => {
     WHERE invite_key = ?
   `).run(answer, invite_key);
 
-  const submission = createRsvpEmailSubmission({
-    req,
-    inviteKey: invite_key,
-    guestName: invitation.guest_name,
-    answer,
-  });
+  const settings = getPublicSettings();
+  const submission = settings.rsvp_email_enabled
+    ? createRsvpEmailSubmission({
+        req,
+        inviteKey: invite_key,
+        guestName: invitation.guest_name,
+        answer,
+      })
+    : null;
 
   res.json({
     success: true,
-    email: submission
-      ? { provider: "web3forms", submission }
-      : { provider: "web3forms", sent: false, reason: "missing_access_key" },
+    email: settings.rsvp_email_enabled
+      ? submission
+        ? { provider: "web3forms", submission }
+        : { provider: "web3forms", sent: false, reason: "missing_access_key" }
+      : { provider: "web3forms", sent: false, reason: "disabled" },
   });
 });
 
