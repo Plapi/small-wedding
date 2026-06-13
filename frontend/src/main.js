@@ -1,60 +1,50 @@
-import './style.css'
-import javascriptLogo from './assets/javascript.svg'
-import viteLogo from './assets/vite.svg'
-import heroImg from './assets/hero.png'
-import { setupCounter } from './counter.js'
+const API_URL = "http://localhost:3001/api";
 
-document.querySelector('#app').innerHTML = `
-<section id="center">
-  <div class="hero">
-    <img src="${heroImg}" class="base" width="170" height="179">
-    <img src="${javascriptLogo}" class="framework" alt="JavaScript logo"/>
-    <img src="${viteLogo}" class="vite" alt="Vite logo" />
-  </div>
-  <div>
-    <h1>Get started</h1>
-    <p>Edit <code>src/main.js</code> and save to test <code>HMR</code></p>
-  </div>
-  <button id="counter" type="button" class="counter"></button>
-</section>
+const params = new URLSearchParams(window.location.search);
+const inviteKey = params.get("key");
 
-<div class="ticks"></div>
+const app = document.querySelector("#app");
 
-<section id="next-steps">
-  <div id="docs">
-    <svg class="icon" role="presentation" aria-hidden="true"><use href="/icons.svg#documentation-icon"></use></svg>
-    <h2>Documentation</h2>
-    <p>Your questions, answered</p>
-    <ul>
-      <li>
-        <a href="https://vite.dev/" target="_blank">
-          <img class="logo" src="${viteLogo}" alt="" />
-          Explore Vite
-        </a>
-      </li>
-      <li>
-        <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript" target="_blank">
-          <img class="button-icon" src="${javascriptLogo}" alt="">
-          Learn more
-        </a>
-      </li>
-    </ul>
-  </div>
-  <div id="social">
-    <svg class="icon" role="presentation" aria-hidden="true"><use href="/icons.svg#social-icon"></use></svg>
-    <h2>Connect with us</h2>
-    <p>Join the Vite community</p>
-    <ul>
-      <li><a href="https://github.com/vitejs/vite" target="_blank"><svg class="button-icon" role="presentation" aria-hidden="true"><use href="/icons.svg#github-icon"></use></svg>GitHub</a></li>
-      <li><a href="https://chat.vite.dev/" target="_blank"><svg class="button-icon" role="presentation" aria-hidden="true"><use href="/icons.svg#discord-icon"></use></svg>Discord</a></li>
-      <li><a href="https://x.com/vite_js" target="_blank"><svg class="button-icon" role="presentation" aria-hidden="true"><use href="/icons.svg#x-icon"></use></svg>X.com</a></li>
-      <li><a href="https://bsky.app/profile/vite.dev" target="_blank"><svg class="button-icon" role="presentation" aria-hidden="true"><use href="/icons.svg#bluesky-icon"></use></svg>Bluesky</a></li>
-    </ul>
-  </div>
-</section>
+async function loadInvitation() {
+  if (!inviteKey) {
+    app.innerHTML = "Lipsește cheia invitației.";
+    return;
+  }
 
-<div class="ticks"></div>
-<section id="spacer"></section>
-`
+  const response = await fetch(`${API_URL}/invitations/${inviteKey}`);
+  const invitation = await response.json();
 
-setupCounter(document.querySelector('#counter'))
+  app.innerHTML = `
+    <main style="max-width: 480px; margin: auto; padding: 24px; text-align: center;">
+      <h1>Adrian & Liliana</h1>
+      <h2>Invitație la Cununie Civilă</h2>
+      <p>Bună, ${invitation.guest_name}!</p>
+      <p>Vii la cununia noastră?</p>
+
+      <button id="yesBtn">Da, vin</button>
+      <button id="noBtn">Nu pot ajunge</button>
+
+      <p id="status"></p>
+    </main>
+  `;
+
+  document.querySelector("#yesBtn").onclick = () => sendAnswer("yes");
+  document.querySelector("#noBtn").onclick = () => sendAnswer("no");
+}
+
+async function sendAnswer(answer) {
+  await fetch(`${API_URL}/rsvp`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      invite_key: inviteKey,
+      answer,
+    }),
+  });
+
+  document.querySelector("#status").textContent = "Răspunsul a fost trimis. Mulțumim!";
+}
+
+loadInvitation();
