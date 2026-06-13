@@ -362,7 +362,7 @@ code {
 }
 
 .admin-page {
-  width: min(1040px, calc(100% - 32px));
+  width: min(1120px, calc(100% - 32px));
   margin: 0 auto;
   padding: 32px 0;
   text-align: left;
@@ -503,31 +503,86 @@ code {
   margin-bottom: 8px;
 }
 
-.admin-table-wrap {
-  overflow-x: auto;
+.admin-list-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: end;
+  gap: 16px;
+  margin: 8px 0 12px;
+}
+
+.admin-list-header h2 {
+  margin: 0;
+  color: var(--ink);
+  font-family: var(--serif);
+  font-size: 1.45rem;
+  font-weight: 500;
+}
+
+.admin-list-header p {
+  margin: 0;
+}
+
+.invitation-list {
+  display: grid;
+  gap: 14px;
+}
+
+.invitation-card {
   border: 1px solid var(--border);
   border-radius: 8px;
+  padding: 18px;
   background: var(--paper);
+  box-shadow: 0 10px 30px rgba(79, 61, 39, 0.08);
 }
 
-.admin-table {
-  width: 100%;
-  border-collapse: collapse;
-  min-width: 1120px;
+.invitation-card.is-dragging {
+  opacity: 0.55;
 }
 
-.admin-table th,
-.admin-table td {
-  padding: 12px 14px;
-  border-bottom: 1px solid var(--border);
-  text-align: left;
-  vertical-align: top;
+.invitation-card-header {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 12px;
+  align-items: start;
+  margin-bottom: 16px;
 }
 
-.admin-table th {
+.invitation-card-header h3 {
+  margin: 0;
   color: var(--ink);
-  font-size: 0.86rem;
+  font-size: 1.18rem;
+}
+
+.invitation-card-header p {
+  margin: 3px 0 0;
+}
+
+.drag-handle {
+  min-height: 36px;
+  border-radius: 8px;
+  padding: 0 12px;
+  color: var(--ink);
+  background: rgba(234, 217, 189, 0.52);
   font-weight: 800;
+  cursor: grab;
+}
+
+.invitation-card-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.invitation-card-grid label {
+  display: grid;
+  gap: 6px;
+  color: var(--ink);
+  font-weight: 700;
+}
+
+.wide-field {
+  grid-column: 1 / -1;
 }
 
 .key-cell {
@@ -541,12 +596,22 @@ code {
 }
 
 .table-check {
-  display: inline-flex;
+  display: flex;
   gap: 8px;
   align-items: center;
   min-height: 38px;
   color: var(--ink);
   font-weight: 700;
+}
+
+.invitation-card-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  margin-top: 16px;
+  padding-top: 14px;
+  border-top: 1px solid var(--border);
 }
 
 .row-actions {
@@ -612,10 +677,6 @@ code {
   margin-top: 3px;
 }
 
-.admin-table tbody tr:last-child td {
-  border-bottom: 0;
-}
-
 .answer {
   display: inline-flex;
   align-items: center;
@@ -662,6 +723,12 @@ code {
     flex-direction: column;
   }
 
+  .admin-list-header,
+  .invitation-card-footer {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
   .summary-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
@@ -671,6 +738,10 @@ code {
   }
 
   .key-cell {
+    grid-template-columns: 1fr;
+  }
+
+  .invitation-card-grid {
     grid-template-columns: 1fr;
   }
 }

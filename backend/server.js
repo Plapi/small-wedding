@@ -32,6 +32,7 @@ db.exec(`
     party_size INTEGER NOT NULL DEFAULT 1,
     accommodation_enabled INTEGER NOT NULL DEFAULT 0,
     accommodation_requested INTEGER NOT NULL DEFAULT 0,
+    sort_order INTEGER NOT NULL DEFAULT 0,
     answered_at TEXT
   );
 
@@ -66,6 +67,11 @@ if (!invitationColumns.some((column) => column.name === "accommodation_requested
 
 if (invitationColumns.some((column) => column.name === "room_count")) {
   db.exec("ALTER TABLE invitations DROP COLUMN room_count");
+}
+
+if (!invitationColumns.some((column) => column.name === "sort_order")) {
+  db.exec("ALTER TABLE invitations ADD COLUMN sort_order INTEGER NOT NULL DEFAULT 0");
+  db.exec("UPDATE invitations SET sort_order = id WHERE sort_order = 0");
 }
 
 function generateInviteKey() {
@@ -108,7 +114,7 @@ function getInvitationById(id) {
   return db
     .prepare(
       `SELECT id, invite_key, guest_name, answer, party_size, accommodation_enabled,
-              accommodation_requested, answered_at
+              accommodation_requested, sort_order, answered_at
        FROM invitations
        WHERE id = ?`
     )
@@ -159,7 +165,7 @@ app.get("/api/invitations/:key", (req, res) => {
   const row = db
     .prepare(
       `SELECT id, invite_key, guest_name, answer, party_size, accommodation_enabled,
-              accommodation_requested, answered_at
+              accommodation_requested, sort_order, answered_at
        FROM invitations
        WHERE invite_key = ?`
     )
@@ -185,9 +191,9 @@ app.get("/api/admin/invitations", (req, res) => {
   const invitations = db
     .prepare(
       `SELECT id, invite_key, guest_name, answer, party_size, accommodation_enabled,
-              accommodation_requested, answered_at
+              accommodation_requested, sort_order, answered_at
        FROM invitations
-       ORDER BY id DESC`
+       ORDER BY sort_order ASC, id ASC`
     )
     .all();
 
@@ -227,6 +233,8 @@ app.post("/api/admin/invitations", (req, res) => {
   const partySize = normalizePartySize(req.body.party_size);
   const accommodationEnabled = normalizeBoolean(req.body.accommodation_enabled);
   const accommodationRequested = accommodationEnabled ? normalizeBoolean(req.body.accommodation_requested) : 0;
+  const sortOrder = db.prepare("SELECT COALESCE(MAX(sort_order), 0) + 1 AS next_order FROM invitations").get()
+    .next_order;
 
   if (!guestName) {
     return res.status(400).json({ error: "Numele invitatului este obligatoriu" });
@@ -237,8 +245,8 @@ app.post("/api/admin/invitations", (req, res) => {
       .prepare(
         `INSERT INTO invitations (
           invite_key, guest_name, answer, party_size, accommodation_enabled,
-          accommodation_requested, answered_at
-        ) VALUES (?, ?, ?, ?, ?, ?, ?)`
+          accommodation_requested, sort_order, answered_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
       )
       .run(
         inviteKey,
@@ -247,6 +255,7 @@ app.post("/api/admin/invitations", (req, res) => {
         partySize,
         accommodationEnabled,
         accommodationRequested,
+        sortOrder,
         answer ? new Date().toISOString() : null
       );
 
@@ -254,6 +263,29 @@ app.post("/api/admin/invitations", (req, res) => {
   } catch (error) {
     sendDatabaseError(res, error);
   }
+});
+
+app.put("/api/admin/invitations/reorder", (req, res) => {
+  if (!isAdminRequest(req)) {
+    return res.status(401).json({ error: "Unauthorized" });
+  }
+
+  const ids = Array.isArray(req.body.ids) ? req.body.ids.map((id) => Number(id)).filter(Boolean) : [];
+
+  if (!ids.length) {
+    return res.status(400).json({ error: "Ordinea este invalidă" });
+  }
+
+  const updateOrder = db.prepare("UPDATE invitations SET sort_order = ? WHERE id = ?");
+  const saveOrder = db.transaction((orderedIds) => {
+    orderedIds.forEach((id, index) => {
+      updateOrder.run(index + 1, id);
+    });
+  });
+
+  saveOrder(ids);
+
+  res.json({ success: true });
 });
 
 app.put("/api/admin/invitations/:id", (req, res) => {

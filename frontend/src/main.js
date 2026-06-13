@@ -304,50 +304,69 @@ function renderAdminLogin(message = "") {
 }
 
 function renderAdminDashboard({ summary, invitations }, settings) {
-  const rows = invitations
+  const cards = invitations
     .map(
       (invitation) => `
-        <tr data-id="${invitation.id}">
-          <td>
-            <input class="table-input" name="guest_name" value="${escapeHtml(invitation.guest_name)}" />
-          </td>
-          <td>
-            <div class="key-cell">
-              <input class="table-input key-input" name="invite_key" value="${escapeHtml(invitation.invite_key)}" />
-              <button class="ghost-btn regenerate-btn" type="button">Regenerează</button>
-              <button class="ghost-btn copy-link-btn" type="button">Copiază link</button>
+        <article class="invitation-card" data-id="${invitation.id}" draggable="true">
+          <header class="invitation-card-header">
+            <button class="drag-handle" type="button" aria-label="Mută invitația">Mută</button>
+            <div>
+              <h3>${escapeHtml(invitation.guest_name)}</h3>
+              <p>${formatAnswer(invitation.answer)} · ${invitation.party_size || 1} persoane</p>
             </div>
-          </td>
-          <td>
-            <select class="table-input" name="answer">
+          </header>
+
+          <div class="invitation-card-grid">
+            <label>
+              Nume invitat
+              <input class="table-input" name="guest_name" value="${escapeHtml(invitation.guest_name)}" />
+            </label>
+
+            <label class="wide-field">
+              Cheie invitație
+              <div class="key-cell">
+                <input class="table-input key-input" name="invite_key" value="${escapeHtml(invitation.invite_key)}" />
+                <button class="ghost-btn regenerate-btn" type="button">Regenerează</button>
+                <button class="ghost-btn copy-link-btn" type="button">Copiază link</button>
+              </div>
+            </label>
+
+            <label>
+              Răspuns
+              <select class="table-input" name="answer">
               <option value="" ${!invitation.answer ? "selected" : ""}>Fără răspuns</option>
               <option value="yes" ${invitation.answer === "yes" ? "selected" : ""}>Da</option>
               <option value="no" ${invitation.answer === "no" ? "selected" : ""}>Nu</option>
-            </select>
-          </td>
-          <td>
-            <input class="table-input party-size-input" name="party_size" type="number" min="1" max="20" value="${escapeHtml(invitation.party_size || 1)}" />
-          </td>
-          <td>
+              </select>
+            </label>
+
+            <label>
+              Persoane
+              <input class="table-input party-size-input" name="party_size" type="number" min="1" max="20" value="${escapeHtml(invitation.party_size || 1)}" />
+            </label>
+
             <label class="table-check">
               <input name="accommodation_enabled" type="checkbox" ${invitation.accommodation_enabled ? "checked" : ""} />
-              <span>Activă</span>
+              <span>Cazare disponibilă</span>
             </label>
-          </td>
-          <td>
-            <select class="table-input" name="accommodation_requested">
+
+            <label>
+              Cere cazare
+              <select class="table-input" name="accommodation_requested">
               <option value="false" ${!invitation.accommodation_requested ? "selected" : ""}>Nu</option>
               <option value="true" ${invitation.accommodation_requested ? "selected" : ""}>Da</option>
-            </select>
-          </td>
-          <td>${formatDate(invitation.answered_at)}</td>
-          <td>
+              </select>
+            </label>
+          </div>
+
+          <footer class="invitation-card-footer">
+            <span>Răspuns la: ${formatDate(invitation.answered_at)}</span>
             <div class="row-actions">
               <button class="save-row-btn" type="button">Salvează</button>
               <button class="danger-btn delete-row-btn" type="button">Șterge</button>
             </div>
-          </td>
-        </tr>
+          </footer>
+        </article>
       `
     )
     .join("");
@@ -403,24 +422,14 @@ function renderAdminDashboard({ summary, invitations }, settings) {
         <p id="adminStatus" class="status" role="status" aria-live="polite"></p>
       </form>
 
-      <section class="admin-table-wrap">
-        <table class="admin-table">
-          <thead>
-            <tr>
-              <th>Invitat</th>
-              <th>Cheie</th>
-              <th>Răspuns</th>
-              <th>Persoane</th>
-              <th>Cazare activă</th>
-              <th>Cere cazare</th>
-              <th>Răspuns la</th>
-              <th>Acțiuni</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${rows || '<tr><td colspan="5">Nu există invitații încă.</td></tr>'}
-          </tbody>
-        </table>
+      <section>
+        <div class="admin-list-header">
+          <h2>Lista invitațiilor</h2>
+          <p>Trage cardurile pentru a schimba ordinea.</p>
+        </div>
+        <div id="invitationList" class="invitation-list">
+          ${cards || '<p class="empty-state">Nu există invitații încă.</p>'}
+        </div>
       </section>
 
       <section class="admin-panel admin-settings-panel">
@@ -475,18 +484,18 @@ function renderAdminDashboard({ summary, invitations }, settings) {
 
   document.querySelectorAll(".save-row-btn").forEach((button) => {
     button.onclick = async () => {
-      const row = button.closest("tr");
-      const id = row.dataset.id;
+      const card = button.closest(".invitation-card");
+      const id = card.dataset.id;
 
-      await updateInvitationRow(id, row, button);
+      await updateInvitationRow(id, card, button);
     };
   });
 
   document.querySelectorAll(".regenerate-btn").forEach((button) => {
     button.onclick = async () => {
-      const row = button.closest("tr");
-      const id = row.dataset.id;
-      const keyInput = row.querySelector('[name="invite_key"]');
+      const card = button.closest(".invitation-card");
+      const id = card.dataset.id;
+      const keyInput = card.querySelector('[name="invite_key"]');
 
       button.disabled = true;
 
@@ -505,8 +514,8 @@ function renderAdminDashboard({ summary, invitations }, settings) {
 
   document.querySelectorAll(".copy-link-btn").forEach((button) => {
     button.onclick = async () => {
-      const row = button.closest("tr");
-      const keyInput = row.querySelector('[name="invite_key"]');
+      const card = button.closest(".invitation-card");
+      const keyInput = card.querySelector('[name="invite_key"]');
 
       button.disabled = true;
 
@@ -522,9 +531,9 @@ function renderAdminDashboard({ summary, invitations }, settings) {
 
   document.querySelectorAll(".delete-row-btn").forEach((button) => {
     button.onclick = async () => {
-      const row = button.closest("tr");
-      const id = row.dataset.id;
-      const guestName = row.querySelector('[name="guest_name"]').value;
+      const card = button.closest(".invitation-card");
+      const id = card.dataset.id;
+      const guestName = card.querySelector('[name="guest_name"]').value;
 
       if (!confirm(`Ștergi invitația pentru ${guestName}?`)) {
         return;
@@ -541,6 +550,8 @@ function renderAdminDashboard({ summary, invitations }, settings) {
       }
     };
   });
+
+  setupInvitationDragAndDrop();
 
   document.querySelector("#emailEnabledToggle").onchange = async (event) => {
     const toggle = event.currentTarget;
@@ -567,25 +578,93 @@ function renderAdminDashboard({ summary, invitations }, settings) {
   };
 }
 
-async function updateInvitationRow(id, row, button) {
+async function updateInvitationRow(id, card, button) {
   button.disabled = true;
 
   try {
     await adminRequest(`/admin/invitations/${id}`, {
       method: "PUT",
       body: JSON.stringify({
-        guest_name: row.querySelector('[name="guest_name"]').value,
-        invite_key: row.querySelector('[name="invite_key"]').value,
-        answer: row.querySelector('[name="answer"]').value,
-        party_size: row.querySelector('[name="party_size"]').value,
-        accommodation_enabled: row.querySelector('[name="accommodation_enabled"]').checked,
-        accommodation_requested: row.querySelector('[name="accommodation_requested"]').value === "true",
+        guest_name: card.querySelector('[name="guest_name"]').value,
+        invite_key: card.querySelector('[name="invite_key"]').value,
+        answer: card.querySelector('[name="answer"]').value,
+        party_size: card.querySelector('[name="party_size"]').value,
+        accommodation_enabled: card.querySelector('[name="accommodation_enabled"]').checked,
+        accommodation_requested: card.querySelector('[name="accommodation_requested"]').value === "true",
       }),
     });
     await loadAdminPage();
   } catch (error) {
     alert(error.message);
     button.disabled = false;
+  }
+}
+
+function setupInvitationDragAndDrop() {
+  const list = document.querySelector("#invitationList");
+
+  if (!list) {
+    return;
+  }
+
+  list.querySelectorAll(".invitation-card").forEach((card) => {
+    card.addEventListener("dragstart", () => {
+      card.classList.add("is-dragging");
+    });
+
+    card.addEventListener("dragend", async () => {
+      card.classList.remove("is-dragging");
+      await saveInvitationOrder(list);
+    });
+  });
+
+  list.addEventListener("dragover", (event) => {
+    event.preventDefault();
+
+    const draggingCard = list.querySelector(".is-dragging");
+    const afterCard = getDragAfterCard(list, event.clientY);
+
+    if (!draggingCard) {
+      return;
+    }
+
+    if (!afterCard) {
+      list.appendChild(draggingCard);
+    } else {
+      list.insertBefore(draggingCard, afterCard);
+    }
+  });
+}
+
+function getDragAfterCard(list, y) {
+  const cards = [...list.querySelectorAll(".invitation-card:not(.is-dragging)")];
+
+  return cards.reduce(
+    (closest, card) => {
+      const box = card.getBoundingClientRect();
+      const offset = y - box.top - box.height / 2;
+
+      if (offset < 0 && offset > closest.offset) {
+        return { offset, element: card };
+      }
+
+      return closest;
+    },
+    { offset: Number.NEGATIVE_INFINITY, element: null }
+  ).element;
+}
+
+async function saveInvitationOrder(list) {
+  const ids = [...list.querySelectorAll(".invitation-card")].map((card) => card.dataset.id);
+
+  try {
+    await adminRequest("/admin/invitations/reorder", {
+      method: "PUT",
+      body: JSON.stringify({ ids }),
+    });
+  } catch (error) {
+    alert(error.message);
+    await loadAdminPage();
   }
 }
 
