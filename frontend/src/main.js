@@ -33,9 +33,57 @@ function formatDate(value) {
     return "-";
   }
 
-  return new Date(`${value}Z`).toLocaleString("ro-RO", {
+  const date = value.includes("T") ? new Date(value) : new Date(`${value}Z`);
+
+  return date.toLocaleString("ro-RO", {
     timeZone: "Europe/Bucharest",
   });
+}
+
+function adminHeaders() {
+  return {
+    "Content-Type": "application/json",
+    "x-admin-token": sessionStorage.getItem(ADMIN_TOKEN_STORAGE_KEY),
+  };
+}
+
+function getInvitationUrl(inviteKey) {
+  return `${window.location.origin}/?key=${encodeURIComponent(inviteKey)}`;
+}
+
+async function copyText(text) {
+  if (navigator.clipboard?.writeText) {
+    await navigator.clipboard.writeText(text);
+    return;
+  }
+
+  const textarea = document.createElement("textarea");
+  textarea.value = text;
+  textarea.setAttribute("readonly", "");
+  textarea.style.position = "fixed";
+  textarea.style.opacity = "0";
+  document.body.appendChild(textarea);
+  textarea.select();
+  document.execCommand("copy");
+  textarea.remove();
+}
+
+async function adminRequest(path, options = {}) {
+  const response = await fetch(`${API_URL}${path}`, {
+    ...options,
+    headers: {
+      ...adminHeaders(),
+      ...(options.headers || {}),
+    },
+  });
+
+  const data = await response.json().catch(() => ({}));
+
+  if (!response.ok) {
+    throw new Error(data.error || "Operațiunea nu a reușit.");
+  }
+
+  return data;
 }
 
 function renderInvitationPage(invitation) {
@@ -213,12 +261,31 @@ function renderAdminDashboard({ summary, invitations }) {
   const rows = invitations
     .map(
       (invitation) => `
-        <tr>
-          <td>${escapeHtml(invitation.guest_name)}</td>
-          <td><code>${escapeHtml(invitation.invite_key)}</code></td>
-          <td><span class="answer answer-${escapeHtml(invitation.answer || "pending")}">${formatAnswer(invitation.answer)}</span></td>
-          <td>${formatDate(invitation.created_at)}</td>
+        <tr data-id="${invitation.id}">
+          <td>
+            <input class="table-input" name="guest_name" value="${escapeHtml(invitation.guest_name)}" />
+          </td>
+          <td>
+            <div class="key-cell">
+              <input class="table-input key-input" name="invite_key" value="${escapeHtml(invitation.invite_key)}" />
+              <button class="ghost-btn regenerate-btn" type="button">Regenerează</button>
+              <button class="ghost-btn copy-link-btn" type="button">Copiază link</button>
+            </div>
+          </td>
+          <td>
+            <select class="table-input" name="answer">
+              <option value="" ${!invitation.answer ? "selected" : ""}>Fără răspuns</option>
+              <option value="yes" ${invitation.answer === "yes" ? "selected" : ""}>Da</option>
+              <option value="no" ${invitation.answer === "no" ? "selected" : ""}>Nu</option>
+            </select>
+          </td>
           <td>${formatDate(invitation.answered_at)}</td>
+          <td>
+            <div class="row-actions">
+              <button class="save-row-btn" type="button">Salvează</button>
+              <button class="danger-btn delete-row-btn" type="button">Șterge</button>
+            </div>
+          </td>
         </tr>
       `
     )
@@ -241,6 +308,30 @@ function renderAdminDashboard({ summary, invitations }) {
         <div><strong>${summary.pending}</strong><span>Fără răspuns</span></div>
       </section>
 
+      <form id="addInvitationForm" class="admin-panel">
+        <h2>Adaugă invitație</h2>
+        <div class="admin-form-grid">
+          <label>
+            Nume invitat
+            <input name="guest_name" required placeholder="Ex: Andrei Popescu" />
+          </label>
+          <label>
+            Cheie invitație
+            <input name="invite_key" placeholder="Se generează automat dacă rămâne gol" />
+          </label>
+          <label>
+            Răspuns
+            <select name="answer">
+              <option value="">Fără răspuns</option>
+              <option value="yes">Da</option>
+              <option value="no">Nu</option>
+            </select>
+          </label>
+          <button type="submit">Adaugă</button>
+        </div>
+        <p id="adminStatus" class="status" role="status" aria-live="polite"></p>
+      </form>
+
       <section class="admin-table-wrap">
         <table class="admin-table">
           <thead>
@@ -248,8 +339,8 @@ function renderAdminDashboard({ summary, invitations }) {
               <th>Invitat</th>
               <th>Cheie</th>
               <th>Răspuns</th>
-              <th>Creată</th>
               <th>Răspuns la</th>
+              <th>Acțiuni</th>
             </tr>
           </thead>
           <tbody>
@@ -264,6 +355,119 @@ function renderAdminDashboard({ summary, invitations }) {
     sessionStorage.removeItem(ADMIN_TOKEN_STORAGE_KEY);
     renderAdminLogin();
   };
+
+  document.querySelector("#addInvitationForm").onsubmit = async (event) => {
+    event.preventDefault();
+    const form = event.currentTarget;
+    const formData = new FormData(form);
+    const status = document.querySelector("#adminStatus");
+
+    try {
+      await adminRequest("/admin/invitations", {
+        method: "POST",
+        body: JSON.stringify({
+          guest_name: formData.get("guest_name"),
+          invite_key: formData.get("invite_key"),
+          answer: formData.get("answer"),
+        }),
+      });
+      form.reset();
+      status.className = "status status-success";
+      status.textContent = "Invitația a fost adăugată.";
+      await loadAdminPage();
+    } catch (error) {
+      status.className = "status status-error";
+      status.textContent = error.message;
+    }
+  };
+
+  document.querySelectorAll(".save-row-btn").forEach((button) => {
+    button.onclick = async () => {
+      const row = button.closest("tr");
+      const id = row.dataset.id;
+
+      await updateInvitationRow(id, row, button);
+    };
+  });
+
+  document.querySelectorAll(".regenerate-btn").forEach((button) => {
+    button.onclick = async () => {
+      const row = button.closest("tr");
+      const id = row.dataset.id;
+      const keyInput = row.querySelector('[name="invite_key"]');
+
+      button.disabled = true;
+
+      try {
+        const data = await adminRequest(`/admin/invitations/${id}/regenerate-key`, {
+          method: "POST",
+        });
+        keyInput.value = data.invitation.invite_key;
+      } catch (error) {
+        alert(error.message);
+      } finally {
+        button.disabled = false;
+      }
+    };
+  });
+
+  document.querySelectorAll(".copy-link-btn").forEach((button) => {
+    button.onclick = async () => {
+      const row = button.closest("tr");
+      const keyInput = row.querySelector('[name="invite_key"]');
+
+      button.disabled = true;
+
+      try {
+        await copyText(getInvitationUrl(keyInput.value.trim()));
+      } catch (error) {
+        alert("Linkul nu a putut fi copiat.");
+      } finally {
+        button.disabled = false;
+      }
+    };
+  });
+
+  document.querySelectorAll(".delete-row-btn").forEach((button) => {
+    button.onclick = async () => {
+      const row = button.closest("tr");
+      const id = row.dataset.id;
+      const guestName = row.querySelector('[name="guest_name"]').value;
+
+      if (!confirm(`Ștergi invitația pentru ${guestName}?`)) {
+        return;
+      }
+
+      button.disabled = true;
+
+      try {
+        await adminRequest(`/admin/invitations/${id}`, { method: "DELETE" });
+        await loadAdminPage();
+      } catch (error) {
+        alert(error.message);
+        button.disabled = false;
+      }
+    };
+  });
+}
+
+async function updateInvitationRow(id, row, button) {
+  button.disabled = true;
+
+  try {
+    await adminRequest(`/admin/invitations/${id}`, {
+      method: "PUT",
+      body: JSON.stringify({
+        guest_name: row.querySelector('[name="guest_name"]').value,
+        invite_key: row.querySelector('[name="invite_key"]').value,
+        answer: row.querySelector('[name="answer"]').value,
+      }),
+    });
+    await loadAdminPage();
+  } catch (error) {
+    alert(error.message);
+    button.disabled = false;
+  }
 }
 
 async function loadAdminPage() {

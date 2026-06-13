@@ -34,7 +34,8 @@ body {
 }
 
 button,
-input {
+input,
+select {
   font: inherit;
 }
 
@@ -44,7 +45,8 @@ button {
 }
 
 button:focus-visible,
-input:focus-visible {
+input:focus-visible,
+select:focus-visible {
   outline: 3px solid rgba(45, 136, 147, 0.28);
   outline-offset: 3px;
 }
@@ -350,6 +352,49 @@ code {
   background: var(--paper);
 }
 
+.admin-panel {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 18px;
+  margin-bottom: 20px;
+  background: var(--paper);
+}
+
+.admin-panel h2 {
+  margin: 0 0 14px;
+  color: var(--ink);
+  font-family: var(--serif);
+  font-size: 1.45rem;
+  font-weight: 500;
+}
+
+.admin-form-grid {
+  display: grid;
+  grid-template-columns: minmax(190px, 1.2fr) minmax(190px, 1fr) minmax(150px, 0.7fr) auto;
+  gap: 12px;
+  align-items: end;
+}
+
+.admin-form-grid label {
+  display: grid;
+  gap: 6px;
+  color: var(--ink);
+  font-weight: 700;
+}
+
+.admin-form-grid input,
+.admin-form-grid select,
+.table-input {
+  width: 100%;
+  min-height: 38px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 0 10px;
+  color: var(--ink);
+  background: #fffefa;
+}
+
+.admin-form-grid button,
 .admin-login button,
 #logoutBtn {
   min-height: 42px;
@@ -396,7 +441,7 @@ code {
 .admin-table {
   width: 100%;
   border-collapse: collapse;
-  min-width: 760px;
+  min-width: 900px;
 }
 
 .admin-table th,
@@ -411,6 +456,42 @@ code {
   color: var(--ink);
   font-size: 0.86rem;
   font-weight: 800;
+}
+
+.key-cell {
+  display: grid;
+  grid-template-columns: minmax(160px, 1fr) auto auto;
+  gap: 8px;
+}
+
+.row-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.save-row-btn,
+.ghost-btn,
+.danger-btn {
+  min-height: 36px;
+  border-radius: 8px;
+  padding: 0 12px;
+  font-weight: 750;
+}
+
+.save-row-btn {
+  color: #fffdf8;
+  background: var(--sea);
+}
+
+.ghost-btn {
+  color: var(--sea);
+  background: var(--sea-soft);
+}
+
+.danger-btn {
+  color: #fffdf8;
+  background: #a9553b;
 }
 
 .admin-table tbody tr:last-child td {
@@ -465,5 +546,13 @@ code {
 
   .summary-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .admin-form-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .key-cell {
+    grid-template-columns: 1fr;
   }
 }

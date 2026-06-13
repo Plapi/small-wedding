@@ -2,6 +2,7 @@ import express from "express";
 import cors from "cors";
 import Database from "better-sqlite3";
 import dotenv from "dotenv";
+import crypto from "crypto";
 import path from "path";
 import { fileURLToPath } from "url";
 
@@ -28,10 +29,52 @@ db.exec(`
     invite_key TEXT UNIQUE NOT NULL,
     guest_name TEXT NOT NULL,
     answer TEXT,
-    created_at TEXT DEFAULT CURRENT_TIMESTAMP,
     answered_at TEXT
   );
 `);
+
+const invitationColumns = db.prepare("PRAGMA table_info(invitations)").all();
+
+if (invitationColumns.some((column) => column.name === "created_at")) {
+  db.exec("ALTER TABLE invitations DROP COLUMN created_at");
+}
+
+function generateInviteKey() {
+  return crypto.randomBytes(9).toString("base64url");
+}
+
+function generateUniqueInviteKey() {
+  let key = generateInviteKey();
+
+  while (db.prepare("SELECT 1 FROM invitations WHERE invite_key = ?").get(key)) {
+    key = generateInviteKey();
+  }
+
+  return key;
+}
+
+function normalizeAnswer(answer) {
+  if (answer === "yes" || answer === "no") {
+    return answer;
+  }
+
+  return null;
+}
+
+function getInvitationById(id) {
+  return db
+    .prepare("SELECT id, invite_key, guest_name, answer, answered_at FROM invitations WHERE id = ?")
+    .get(id);
+}
+
+function sendDatabaseError(res, error) {
+  if (error.code === "SQLITE_CONSTRAINT_UNIQUE") {
+    return res.status(409).json({ error: "Cheia invitației există deja" });
+  }
+
+  console.error(error);
+  return res.status(500).json({ error: "A apărut o eroare" });
+}
 
 app.post("/api/invitations", (req, res) => {
   const { invite_key, guest_name } = req.body;
@@ -48,7 +91,7 @@ app.post("/api/invitations", (req, res) => {
 
 app.get("/api/invitations/:key", (req, res) => {
   const row = db
-    .prepare("SELECT * FROM invitations WHERE invite_key = ?")
+    .prepare("SELECT id, invite_key, guest_name, answer, answered_at FROM invitations WHERE invite_key = ?")
     .get(req.params.key);
 
   if (!row) {
@@ -70,9 +113,9 @@ app.get("/api/admin/invitations", (req, res) => {
 
   const invitations = db
     .prepare(
-      `SELECT id, invite_key, guest_name, answer, created_at, answered_at
+      `SELECT id, invite_key, guest_name, answer, answered_at
        FROM invitations
-       ORDER BY created_at DESC, id DESC`
+       ORDER BY id DESC`
     )
     .all();
 
@@ -94,6 +137,97 @@ app.get("/api/admin/invitations", (req, res) => {
   );
 
   res.json({ summary, invitations });
+});
+
+app.post("/api/admin/invitations", (req, res) => {
+  if (!isAdminRequest(req)) {
+    return res.status(401).json({ error: "Unauthorized" });
+  }
+
+  const guestName = String(req.body.guest_name || "").trim();
+  const inviteKey = String(req.body.invite_key || "").trim() || generateUniqueInviteKey();
+  const answer = normalizeAnswer(req.body.answer);
+
+  if (!guestName) {
+    return res.status(400).json({ error: "Numele invitatului este obligatoriu" });
+  }
+
+  try {
+    const result = db
+      .prepare("INSERT INTO invitations (invite_key, guest_name, answer, answered_at) VALUES (?, ?, ?, ?)")
+      .run(inviteKey, guestName, answer, answer ? new Date().toISOString() : null);
+
+    res.status(201).json({ success: true, invitation: getInvitationById(result.lastInsertRowid) });
+  } catch (error) {
+    sendDatabaseError(res, error);
+  }
+});
+
+app.put("/api/admin/invitations/:id", (req, res) => {
+  if (!isAdminRequest(req)) {
+    return res.status(401).json({ error: "Unauthorized" });
+  }
+
+  const id = Number(req.params.id);
+  const existing = getInvitationById(id);
+
+  if (!existing) {
+    return res.status(404).json({ error: "Invitația nu există" });
+  }
+
+  const guestName = String(req.body.guest_name || "").trim();
+  const inviteKey = String(req.body.invite_key || "").trim();
+  const answer = normalizeAnswer(req.body.answer);
+
+  if (!guestName || !inviteKey) {
+    return res.status(400).json({ error: "Numele și cheia sunt obligatorii" });
+  }
+
+  const answeredAt =
+    answer && answer !== existing.answer ? new Date().toISOString() : answer ? existing.answered_at : null;
+
+  try {
+    db.prepare(
+      `UPDATE invitations
+       SET invite_key = ?, guest_name = ?, answer = ?, answered_at = ?
+       WHERE id = ?`
+    ).run(inviteKey, guestName, answer, answeredAt, id);
+
+    res.json({ success: true, invitation: getInvitationById(id) });
+  } catch (error) {
+    sendDatabaseError(res, error);
+  }
+});
+
+app.post("/api/admin/invitations/:id/regenerate-key", (req, res) => {
+  if (!isAdminRequest(req)) {
+    return res.status(401).json({ error: "Unauthorized" });
+  }
+
+  const id = Number(req.params.id);
+
+  if (!getInvitationById(id)) {
+    return res.status(404).json({ error: "Invitația nu există" });
+  }
+
+  const inviteKey = generateUniqueInviteKey();
+  db.prepare("UPDATE invitations SET invite_key = ? WHERE id = ?").run(inviteKey, id);
+
+  res.json({ success: true, invitation: getInvitationById(id) });
+});
+
+app.delete("/api/admin/invitations/:id", (req, res) => {
+  if (!isAdminRequest(req)) {
+    return res.status(401).json({ error: "Unauthorized" });
+  }
+
+  const result = db.prepare("DELETE FROM invitations WHERE id = ?").run(req.params.id);
+
+  if (result.changes === 0) {
+    return res.status(404).json({ error: "Invitația nu există" });
+  }
+
+  res.json({ success: true });
 });
 
 function getRequestHostname(req) {
