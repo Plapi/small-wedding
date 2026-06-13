@@ -13,6 +13,10 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const frontendDistPath = path.resolve(__dirname, "../frontend/dist");
 const port = process.env.PORT || 3001;
 const rsvpEmailTo = process.env.RSVP_EMAIL_TO || "adrian.plapamaru@gmail.com";
+const localWeb3FormsKey =
+  process.env.WEB3FORMS_ACCESS_KEY_LOCAL || process.env.WEB3FORMS_ACCESS_KEY;
+const renderWeb3FormsKey =
+  process.env.WEB3FORMS_ACCESS_KEY_RENDER || process.env.WEB3FORMS_ACCESS_KEY;
 
 app.use(cors());
 app.use(express.json());
@@ -53,8 +57,36 @@ app.get("/api/invitations/:key", (req, res) => {
   res.json(row);
 });
 
-function createRsvpEmailSubmission({ inviteKey, guestName, answer }) {
-  const accessKey = process.env.WEB3FORMS_ACCESS_KEY;
+function getRequestHostname(req) {
+  const origin = req.get("origin") || req.get("referer");
+
+  if (origin) {
+    try {
+      return new URL(origin).hostname;
+    } catch {
+      return "";
+    }
+  }
+
+  return req.hostname;
+}
+
+function getWeb3FormsAccessKey(req) {
+  const hostname = getRequestHostname(req);
+
+  if (hostname === "small-wedding.onrender.com") {
+    return renderWeb3FormsKey;
+  }
+
+  if (hostname === "localhost" || hostname === "127.0.0.1") {
+    return localWeb3FormsKey;
+  }
+
+  return renderWeb3FormsKey || localWeb3FormsKey;
+}
+
+function createRsvpEmailSubmission({ req, inviteKey, guestName, answer }) {
+  const accessKey = getWeb3FormsAccessKey(req);
 
   if (!accessKey) {
     return null;
@@ -99,6 +131,7 @@ app.post("/api/rsvp", async (req, res) => {
   `).run(answer, invite_key);
 
   const submission = createRsvpEmailSubmission({
+    req,
     inviteKey: invite_key,
     guestName: invitation.guest_name,
     answer,

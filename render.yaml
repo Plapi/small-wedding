@@ -10,5 +10,7 @@ services:
         value: 22.12.0
       - key: RSVP_EMAIL_TO
         value: adrian.plapamaru@gmail.com
-      - key: WEB3FORMS_ACCESS_KEY
+      - key: WEB3FORMS_ACCESS_KEY_LOCAL
+        sync: false
+      - key: WEB3FORMS_ACCESS_KEY_RENDER
         sync: false
