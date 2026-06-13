@@ -133,6 +133,26 @@ function renderInvitationPage(invitation) {
             </select>
           </label>
 
+          ${
+            invitation.accommodation_enabled
+              ? `
+                <div id="accommodationSection" class="accommodation-section" hidden>
+                  <p>Doriți să vă căutăm cazare?</p>
+                  <div class="segmented-options">
+                    <label>
+                      <input type="radio" name="accommodation_requested" value="true" />
+                      <span>Da</span>
+                    </label>
+                    <label>
+                      <input type="radio" name="accommodation_requested" value="false" />
+                      <span>Nu</span>
+                    </label>
+                  </div>
+                </div>
+              `
+              : ""
+          }
+
           <button id="submitBtn" class="submit-btn" type="submit" disabled>Trimite răspunsul</button>
           <p id="status" class="status" role="status" aria-live="polite"></p>
         </form>
@@ -147,9 +167,13 @@ function renderInvitationPage(invitation) {
     const answer = new FormData(form).get("answer");
     const partySizeField = document.querySelector("#partySizeField");
     const partySizeSelect = document.querySelector("#partySize");
+    const accommodationSection = document.querySelector("#accommodationSection");
 
     partySizeField.hidden = answer !== "yes";
     partySizeSelect.disabled = answer !== "yes";
+    if (accommodationSection) {
+      accommodationSection.hidden = answer !== "yes";
+    }
     submitBtn.disabled = !answer;
   };
 
@@ -202,6 +226,8 @@ async function sendAnswer(answer) {
       invite_key: inviteKey,
       answer,
       party_size: answer === "yes" ? new FormData(form).get("party_size") : 1,
+      accommodation_requested:
+        answer === "yes" ? new FormData(form).get("accommodation_requested") === "true" : false,
     }),
   });
 
@@ -302,6 +328,18 @@ function renderAdminDashboard({ summary, invitations }, settings) {
           <td>
             <input class="table-input party-size-input" name="party_size" type="number" min="1" max="20" value="${escapeHtml(invitation.party_size || 1)}" />
           </td>
+          <td>
+            <label class="table-check">
+              <input name="accommodation_enabled" type="checkbox" ${invitation.accommodation_enabled ? "checked" : ""} />
+              <span>Activă</span>
+            </label>
+          </td>
+          <td>
+            <select class="table-input" name="accommodation_requested">
+              <option value="false" ${!invitation.accommodation_requested ? "selected" : ""}>Nu</option>
+              <option value="true" ${invitation.accommodation_requested ? "selected" : ""}>Da</option>
+            </select>
+          </td>
           <td>${formatDate(invitation.answered_at)}</td>
           <td>
             <div class="row-actions">
@@ -330,6 +368,7 @@ function renderAdminDashboard({ summary, invitations }, settings) {
         <div><strong>${summary.guests}</strong><span>Persoane vin</span></div>
         <div><strong>${summary.no}</strong><span>Nu vin</span></div>
         <div><strong>${summary.pending}</strong><span>Fără răspuns</span></div>
+        <div><strong>${summary.accommodation}</strong><span>Cazare</span></div>
       </section>
 
       <form id="addInvitationForm" class="admin-panel">
@@ -355,6 +394,10 @@ function renderAdminDashboard({ summary, invitations }, settings) {
             Persoane
             <input name="party_size" type="number" min="1" max="20" value="1" />
           </label>
+          <label class="admin-checkbox-label">
+            <span>Cazare disponibilă</span>
+            <input name="accommodation_enabled" type="checkbox" />
+          </label>
           <button type="submit">Adaugă</button>
         </div>
         <p id="adminStatus" class="status" role="status" aria-live="polite"></p>
@@ -368,6 +411,8 @@ function renderAdminDashboard({ summary, invitations }, settings) {
               <th>Cheie</th>
               <th>Răspuns</th>
               <th>Persoane</th>
+              <th>Cazare activă</th>
+              <th>Cere cazare</th>
               <th>Răspuns la</th>
               <th>Acțiuni</th>
             </tr>
@@ -415,6 +460,7 @@ function renderAdminDashboard({ summary, invitations }, settings) {
           invite_key: formData.get("invite_key"),
           answer: formData.get("answer"),
           party_size: formData.get("party_size"),
+          accommodation_enabled: formData.get("accommodation_enabled") === "on",
         }),
       });
       form.reset();
@@ -532,6 +578,8 @@ async function updateInvitationRow(id, row, button) {
         invite_key: row.querySelector('[name="invite_key"]').value,
         answer: row.querySelector('[name="answer"]').value,
         party_size: row.querySelector('[name="party_size"]').value,
+        accommodation_enabled: row.querySelector('[name="accommodation_enabled"]').checked,
+        accommodation_requested: row.querySelector('[name="accommodation_requested"]').value === "true",
       }),
     });
     await loadAdminPage();

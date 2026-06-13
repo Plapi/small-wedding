@@ -224,6 +224,40 @@ code {
   background: rgba(255, 255, 255, 0.72);
 }
 
+.accommodation-section {
+  margin-top: 16px;
+  text-align: left;
+}
+
+.accommodation-section p {
+  margin: 0 0 8px;
+  color: var(--ink);
+  font-weight: 750;
+}
+
+.segmented-options {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.segmented-options label {
+  display: grid;
+  grid-template-columns: 18px 1fr;
+  gap: 8px;
+  align-items: center;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 12px;
+  color: var(--ink);
+  background: rgba(255, 255, 255, 0.62);
+  cursor: pointer;
+}
+
+.segmented-options input {
+  accent-color: var(--sea);
+}
+
 .rsvp-option {
   display: grid;
   grid-template-columns: 24px 1fr;
@@ -397,7 +431,7 @@ code {
 
 .admin-form-grid {
   display: grid;
-  grid-template-columns: minmax(180px, 1.2fr) minmax(180px, 1fr) minmax(130px, 0.7fr) minmax(100px, 0.5fr) auto;
+  grid-template-columns: minmax(180px, 1.2fr) minmax(180px, 1fr) minmax(130px, 0.7fr) minmax(100px, 0.5fr) minmax(120px, 0.6fr) auto;
   gap: 12px;
   align-items: end;
 }
@@ -407,6 +441,17 @@ code {
   gap: 6px;
   color: var(--ink);
   font-weight: 700;
+}
+
+.admin-checkbox-label {
+  align-items: center;
+}
+
+.admin-checkbox-label input,
+.table-check input {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--sea);
 }
 
 .admin-form-grid input,
@@ -434,7 +479,7 @@ code {
 
 .summary-grid {
   display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
+  grid-template-columns: repeat(6, minmax(0, 1fr));
   gap: 12px;
   margin-bottom: 24px;
 }
@@ -468,7 +513,7 @@ code {
 .admin-table {
   width: 100%;
   border-collapse: collapse;
-  min-width: 900px;
+  min-width: 1120px;
 }
 
 .admin-table th,
@@ -493,6 +538,15 @@ code {
 
 .party-size-input {
   max-width: 88px;
+}
+
+.table-check {
+  display: inline-flex;
+  gap: 8px;
+  align-items: center;
+  min-height: 38px;
+  color: var(--ink);
+  font-weight: 700;
 }
 
 .row-actions {

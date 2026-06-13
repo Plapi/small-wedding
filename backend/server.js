@@ -30,6 +30,8 @@ db.exec(`
     guest_name TEXT NOT NULL,
     answer TEXT,
     party_size INTEGER NOT NULL DEFAULT 1,
+    accommodation_enabled INTEGER NOT NULL DEFAULT 0,
+    accommodation_requested INTEGER NOT NULL DEFAULT 0,
     answered_at TEXT
   );
 
@@ -52,6 +54,18 @@ if (invitationColumns.some((column) => column.name === "created_at")) {
 
 if (!invitationColumns.some((column) => column.name === "party_size")) {
   db.exec("ALTER TABLE invitations ADD COLUMN party_size INTEGER NOT NULL DEFAULT 1");
+}
+
+if (!invitationColumns.some((column) => column.name === "accommodation_enabled")) {
+  db.exec("ALTER TABLE invitations ADD COLUMN accommodation_enabled INTEGER NOT NULL DEFAULT 0");
+}
+
+if (!invitationColumns.some((column) => column.name === "accommodation_requested")) {
+  db.exec("ALTER TABLE invitations ADD COLUMN accommodation_requested INTEGER NOT NULL DEFAULT 0");
+}
+
+if (invitationColumns.some((column) => column.name === "room_count")) {
+  db.exec("ALTER TABLE invitations DROP COLUMN room_count");
 }
 
 function generateInviteKey() {
@@ -86,9 +100,18 @@ function normalizePartySize(partySize) {
   return Math.min(Math.max(parsed, 1), 20);
 }
 
+function normalizeBoolean(value) {
+  return value === true || value === "true" || value === "on" || value === 1 || value === "1" ? 1 : 0;
+}
+
 function getInvitationById(id) {
   return db
-    .prepare("SELECT id, invite_key, guest_name, answer, party_size, answered_at FROM invitations WHERE id = ?")
+    .prepare(
+      `SELECT id, invite_key, guest_name, answer, party_size, accommodation_enabled,
+              accommodation_requested, answered_at
+       FROM invitations
+       WHERE id = ?`
+    )
     .get(id);
 }
 
@@ -135,7 +158,10 @@ app.post("/api/invitations", (req, res) => {
 app.get("/api/invitations/:key", (req, res) => {
   const row = db
     .prepare(
-      "SELECT id, invite_key, guest_name, answer, party_size, answered_at FROM invitations WHERE invite_key = ?"
+      `SELECT id, invite_key, guest_name, answer, party_size, accommodation_enabled,
+              accommodation_requested, answered_at
+       FROM invitations
+       WHERE invite_key = ?`
     )
     .get(req.params.key);
 
@@ -158,7 +184,8 @@ app.get("/api/admin/invitations", (req, res) => {
 
   const invitations = db
     .prepare(
-      `SELECT id, invite_key, guest_name, answer, party_size, answered_at
+      `SELECT id, invite_key, guest_name, answer, party_size, accommodation_enabled,
+              accommodation_requested, answered_at
        FROM invitations
        ORDER BY id DESC`
     )
@@ -171,6 +198,10 @@ app.get("/api/admin/invitations", (req, res) => {
       if (invitation.answer === "yes") {
         totals.yes += 1;
         totals.guests += invitation.party_size;
+
+        if (invitation.accommodation_requested) {
+          totals.accommodation += 1;
+        }
       } else if (invitation.answer === "no") {
         totals.no += 1;
       } else {
@@ -179,7 +210,7 @@ app.get("/api/admin/invitations", (req, res) => {
 
       return totals;
     },
-    { total: 0, yes: 0, no: 0, pending: 0, guests: 0 }
+    { total: 0, yes: 0, no: 0, pending: 0, guests: 0, accommodation: 0 }
   );
 
   res.json({ summary, invitations });
@@ -194,6 +225,8 @@ app.post("/api/admin/invitations", (req, res) => {
   const inviteKey = String(req.body.invite_key || "").trim() || generateUniqueInviteKey();
   const answer = normalizeAnswer(req.body.answer);
   const partySize = normalizePartySize(req.body.party_size);
+  const accommodationEnabled = normalizeBoolean(req.body.accommodation_enabled);
+  const accommodationRequested = accommodationEnabled ? normalizeBoolean(req.body.accommodation_requested) : 0;
 
   if (!guestName) {
     return res.status(400).json({ error: "Numele invitatului este obligatoriu" });
@@ -202,9 +235,20 @@ app.post("/api/admin/invitations", (req, res) => {
   try {
     const result = db
       .prepare(
-        "INSERT INTO invitations (invite_key, guest_name, answer, party_size, answered_at) VALUES (?, ?, ?, ?, ?)"
+        `INSERT INTO invitations (
+          invite_key, guest_name, answer, party_size, accommodation_enabled,
+          accommodation_requested, answered_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?)`
       )
-      .run(inviteKey, guestName, answer, partySize, answer ? new Date().toISOString() : null);
+      .run(
+        inviteKey,
+        guestName,
+        answer,
+        partySize,
+        accommodationEnabled,
+        accommodationRequested,
+        answer ? new Date().toISOString() : null
+      );
 
     res.status(201).json({ success: true, invitation: getInvitationById(result.lastInsertRowid) });
   } catch (error) {
@@ -228,6 +272,8 @@ app.put("/api/admin/invitations/:id", (req, res) => {
   const inviteKey = String(req.body.invite_key || "").trim();
   const answer = normalizeAnswer(req.body.answer);
   const partySize = normalizePartySize(req.body.party_size);
+  const accommodationEnabled = normalizeBoolean(req.body.accommodation_enabled);
+  const accommodationRequested = accommodationEnabled ? normalizeBoolean(req.body.accommodation_requested) : 0;
 
   if (!guestName || !inviteKey) {
     return res.status(400).json({ error: "Numele și cheia sunt obligatorii" });
@@ -239,9 +285,19 @@ app.put("/api/admin/invitations/:id", (req, res) => {
   try {
     db.prepare(
       `UPDATE invitations
-       SET invite_key = ?, guest_name = ?, answer = ?, answered_at = ?, party_size = ?
+       SET invite_key = ?, guest_name = ?, answer = ?, answered_at = ?, party_size = ?,
+           accommodation_enabled = ?, accommodation_requested = ?
        WHERE id = ?`
-    ).run(inviteKey, guestName, answer, answeredAt, partySize, id);
+    ).run(
+      inviteKey,
+      guestName,
+      answer,
+      answeredAt,
+      partySize,
+      accommodationEnabled,
+      accommodationRequested,
+      id
+    );
 
     res.json({ success: true, invitation: getInvitationById(id) });
   } catch (error) {
@@ -326,7 +382,14 @@ function getWeb3FormsAccessKey(req) {
   return renderWeb3FormsKey || localWeb3FormsKey;
 }
 
-function createRsvpEmailSubmission({ req, inviteKey, guestName, answer, partySize }) {
+function createRsvpEmailSubmission({
+  req,
+  inviteKey,
+  guestName,
+  answer,
+  partySize,
+  accommodationRequested,
+}) {
   const accessKey = getWeb3FormsAccessKey(req);
 
   if (!accessKey) {
@@ -345,6 +408,7 @@ function createRsvpEmailSubmission({ req, inviteKey, guestName, answer, partySiz
       `Invitat: ${guestName}`,
       `Raspuns: ${readableAnswer}`,
       `Persoane: ${partySize}`,
+      `Cazare: ${accommodationRequested ? "Da" : "Nu"}`,
       `Cheie invitatie: ${inviteKey}`,
       `Trimis la: ${new Date().toLocaleString("ro-RO", { timeZone: "Europe/Bucharest" })}`,
     ].join("\n"),
@@ -367,11 +431,14 @@ app.post("/api/rsvp", async (req, res) => {
     return res.status(404).json({ error: "Invitația nu există" });
   }
 
+  const accommodationRequested =
+    answer === "yes" && invitation.accommodation_enabled ? normalizeBoolean(req.body.accommodation_requested) : 0;
+
   db.prepare(`
     UPDATE invitations
-    SET answer = ?, party_size = ?, answered_at = CURRENT_TIMESTAMP
+    SET answer = ?, party_size = ?, accommodation_requested = ?, answered_at = CURRENT_TIMESTAMP
     WHERE invite_key = ?
-  `).run(answer, partySize, invite_key);
+  `).run(answer, partySize, accommodationRequested, invite_key);
 
   const settings = getPublicSettings();
   const submission = settings.rsvp_email_enabled
@@ -381,6 +448,7 @@ app.post("/api/rsvp", async (req, res) => {
         guestName: invitation.guest_name,
         answer,
         partySize,
+        accommodationRequested,
       })
     : null;
 
