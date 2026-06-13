@@ -1,9 +1,14 @@
 import express from "express";
 import cors from "cors";
 import Database from "better-sqlite3";
+import path from "path";
+import { fileURLToPath } from "url";
 
 const app = express();
 const db = new Database("wedding.db");
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const frontendDistPath = path.resolve(__dirname, "../frontend/dist");
+const port = process.env.PORT || 3001;
 
 app.use(cors());
 app.use(express.json());
@@ -58,6 +63,12 @@ app.post("/api/rsvp", (req, res) => {
   res.json({ success: true });
 });
 
-app.listen(3001, () => {
-  console.log("Backend running on http://localhost:3001");
+app.use(express.static(frontendDistPath));
+
+app.get(/.*/, (req, res) => {
+  res.sendFile(path.join(frontendDistPath, "index.html"));
+});
+
+app.listen(port, () => {
+  console.log(`Backend running on port ${port}`);
 });
