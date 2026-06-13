@@ -382,12 +382,12 @@ function renderAdminDashboard({ summary, invitations }, settings) {
       </section>
 
       <section class="summary-grid" aria-label="Rezumat invitații">
-        <div><strong>${summary.total}</strong><span>Total</span></div>
-        <div><strong>${summary.yes}</strong><span>Vin</span></div>
-        <div><strong>${summary.guests}</strong><span>Persoane vin</span></div>
-        <div><strong>${summary.no}</strong><span>Nu vin</span></div>
-        <div><strong>${summary.pending}</strong><span>Fără răspuns</span></div>
-        <div><strong>${summary.accommodation}</strong><span>Cazare</span></div>
+        <div class="summary-card summary-total"><strong>${summary.total}</strong><span>Total</span></div>
+        <div class="summary-card summary-yes"><strong>${summary.yes}</strong><span>Vin</span></div>
+        <div class="summary-card summary-guests"><strong>${summary.guests}</strong><span>Persoane vin</span></div>
+        <div class="summary-card summary-no"><strong>${summary.no}</strong><span>Nu vin</span></div>
+        <div class="summary-card summary-pending"><strong>${summary.pending}</strong><span>Fără răspuns</span></div>
+        <div class="summary-card summary-accommodation"><strong>${summary.accommodation}</strong><span>Cazare</span></div>
       </section>
 
       <form id="addInvitationForm" class="admin-panel">
@@ -397,7 +397,7 @@ function renderAdminDashboard({ summary, invitations }, settings) {
             Nume invitat
             <input name="guest_name" required placeholder="Ex: Andrei Popescu" />
           </label>
-          <label>
+          <label class="wide-field">
             Cheie invitație
             <input name="invite_key" placeholder="Se generează automat dacă rămâne gol" />
           </label>
@@ -417,7 +417,9 @@ function renderAdminDashboard({ summary, invitations }, settings) {
             <span>Cazare disponibilă</span>
             <input name="accommodation_enabled" type="checkbox" />
           </label>
-          <button type="submit">Adaugă</button>
+        </div>
+        <div class="admin-panel-actions">
+          <button type="submit">Adaugă invitația</button>
         </div>
         <p id="adminStatus" class="status" role="status" aria-live="polite"></p>
       </form>
