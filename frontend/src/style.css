@@ -28,6 +28,10 @@
   box-sizing: border-box;
 }
 
+[hidden] {
+  display: none !important;
+}
+
 body {
   margin: 0;
   min-width: 320px;
@@ -199,6 +203,25 @@ code {
   color: var(--ink);
   font-family: var(--serif);
   font-size: 1.35rem;
+}
+
+.party-size-field {
+  display: grid;
+  gap: 8px;
+  margin-top: 16px;
+  text-align: left;
+  color: var(--ink);
+  font-weight: 750;
+}
+
+.party-size-field select {
+  width: 100%;
+  min-height: 46px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 0 12px;
+  color: var(--ink);
+  background: rgba(255, 255, 255, 0.72);
 }
 
 .rsvp-option {
@@ -374,7 +397,7 @@ code {
 
 .admin-form-grid {
   display: grid;
-  grid-template-columns: minmax(190px, 1.2fr) minmax(190px, 1fr) minmax(150px, 0.7fr) auto;
+  grid-template-columns: minmax(180px, 1.2fr) minmax(180px, 1fr) minmax(130px, 0.7fr) minmax(100px, 0.5fr) auto;
   gap: 12px;
   align-items: end;
 }
@@ -411,7 +434,7 @@ code {
 
 .summary-grid {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(5, minmax(0, 1fr));
   gap: 12px;
   margin-bottom: 24px;
 }
@@ -466,6 +489,10 @@ code {
   display: grid;
   grid-template-columns: minmax(160px, 1fr) auto auto;
   gap: 8px;
+}
+
+.party-size-input {
+  max-width: 88px;
 }
 
 .row-actions {

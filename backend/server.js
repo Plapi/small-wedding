@@ -29,6 +29,7 @@ db.exec(`
     invite_key TEXT UNIQUE NOT NULL,
     guest_name TEXT NOT NULL,
     answer TEXT,
+    party_size INTEGER NOT NULL DEFAULT 1,
     answered_at TEXT
   );
 
@@ -47,6 +48,10 @@ const invitationColumns = db.prepare("PRAGMA table_info(invitations)").all();
 
 if (invitationColumns.some((column) => column.name === "created_at")) {
   db.exec("ALTER TABLE invitations DROP COLUMN created_at");
+}
+
+if (!invitationColumns.some((column) => column.name === "party_size")) {
+  db.exec("ALTER TABLE invitations ADD COLUMN party_size INTEGER NOT NULL DEFAULT 1");
 }
 
 function generateInviteKey() {
@@ -71,9 +76,19 @@ function normalizeAnswer(answer) {
   return null;
 }
 
+function normalizePartySize(partySize) {
+  const parsed = Number.parseInt(partySize, 10);
+
+  if (Number.isNaN(parsed)) {
+    return 1;
+  }
+
+  return Math.min(Math.max(parsed, 1), 20);
+}
+
 function getInvitationById(id) {
   return db
-    .prepare("SELECT id, invite_key, guest_name, answer, answered_at FROM invitations WHERE id = ?")
+    .prepare("SELECT id, invite_key, guest_name, answer, party_size, answered_at FROM invitations WHERE id = ?")
     .get(id);
 }
 
@@ -119,7 +134,9 @@ app.post("/api/invitations", (req, res) => {
 
 app.get("/api/invitations/:key", (req, res) => {
   const row = db
-    .prepare("SELECT id, invite_key, guest_name, answer, answered_at FROM invitations WHERE invite_key = ?")
+    .prepare(
+      "SELECT id, invite_key, guest_name, answer, party_size, answered_at FROM invitations WHERE invite_key = ?"
+    )
     .get(req.params.key);
 
   if (!row) {
@@ -141,7 +158,7 @@ app.get("/api/admin/invitations", (req, res) => {
 
   const invitations = db
     .prepare(
-      `SELECT id, invite_key, guest_name, answer, answered_at
+      `SELECT id, invite_key, guest_name, answer, party_size, answered_at
        FROM invitations
        ORDER BY id DESC`
     )
@@ -153,6 +170,7 @@ app.get("/api/admin/invitations", (req, res) => {
 
       if (invitation.answer === "yes") {
         totals.yes += 1;
+        totals.guests += invitation.party_size;
       } else if (invitation.answer === "no") {
         totals.no += 1;
       } else {
@@ -161,7 +179,7 @@ app.get("/api/admin/invitations", (req, res) => {
 
       return totals;
     },
-    { total: 0, yes: 0, no: 0, pending: 0 }
+    { total: 0, yes: 0, no: 0, pending: 0, guests: 0 }
   );
 
   res.json({ summary, invitations });
@@ -175,6 +193,7 @@ app.post("/api/admin/invitations", (req, res) => {
   const guestName = String(req.body.guest_name || "").trim();
   const inviteKey = String(req.body.invite_key || "").trim() || generateUniqueInviteKey();
   const answer = normalizeAnswer(req.body.answer);
+  const partySize = normalizePartySize(req.body.party_size);
 
   if (!guestName) {
     return res.status(400).json({ error: "Numele invitatului este obligatoriu" });
@@ -182,8 +201,10 @@ app.post("/api/admin/invitations", (req, res) => {
 
   try {
     const result = db
-      .prepare("INSERT INTO invitations (invite_key, guest_name, answer, answered_at) VALUES (?, ?, ?, ?)")
-      .run(inviteKey, guestName, answer, answer ? new Date().toISOString() : null);
+      .prepare(
+        "INSERT INTO invitations (invite_key, guest_name, answer, party_size, answered_at) VALUES (?, ?, ?, ?, ?)"
+      )
+      .run(inviteKey, guestName, answer, partySize, answer ? new Date().toISOString() : null);
 
     res.status(201).json({ success: true, invitation: getInvitationById(result.lastInsertRowid) });
   } catch (error) {
@@ -206,6 +227,7 @@ app.put("/api/admin/invitations/:id", (req, res) => {
   const guestName = String(req.body.guest_name || "").trim();
   const inviteKey = String(req.body.invite_key || "").trim();
   const answer = normalizeAnswer(req.body.answer);
+  const partySize = normalizePartySize(req.body.party_size);
 
   if (!guestName || !inviteKey) {
     return res.status(400).json({ error: "Numele și cheia sunt obligatorii" });
@@ -217,9 +239,9 @@ app.put("/api/admin/invitations/:id", (req, res) => {
   try {
     db.prepare(
       `UPDATE invitations
-       SET invite_key = ?, guest_name = ?, answer = ?, answered_at = ?
+       SET invite_key = ?, guest_name = ?, answer = ?, answered_at = ?, party_size = ?
        WHERE id = ?`
-    ).run(inviteKey, guestName, answer, answeredAt, id);
+    ).run(inviteKey, guestName, answer, answeredAt, partySize, id);
 
     res.json({ success: true, invitation: getInvitationById(id) });
   } catch (error) {
@@ -304,7 +326,7 @@ function getWeb3FormsAccessKey(req) {
   return renderWeb3FormsKey || localWeb3FormsKey;
 }
 
-function createRsvpEmailSubmission({ req, inviteKey, guestName, answer }) {
+function createRsvpEmailSubmission({ req, inviteKey, guestName, answer, partySize }) {
   const accessKey = getWeb3FormsAccessKey(req);
 
   if (!accessKey) {
@@ -322,6 +344,7 @@ function createRsvpEmailSubmission({ req, inviteKey, guestName, answer }) {
     message: [
       `Invitat: ${guestName}`,
       `Raspuns: ${readableAnswer}`,
+      `Persoane: ${partySize}`,
       `Cheie invitatie: ${inviteKey}`,
       `Trimis la: ${new Date().toLocaleString("ro-RO", { timeZone: "Europe/Bucharest" })}`,
     ].join("\n"),
@@ -330,6 +353,7 @@ function createRsvpEmailSubmission({ req, inviteKey, guestName, answer }) {
 
 app.post("/api/rsvp", async (req, res) => {
   const { invite_key, answer } = req.body;
+  const partySize = normalizePartySize(req.body.party_size);
 
   if (!invite_key || !["yes", "no"].includes(answer)) {
     return res.status(400).json({ error: "Răspuns invalid" });
@@ -345,9 +369,9 @@ app.post("/api/rsvp", async (req, res) => {
 
   db.prepare(`
     UPDATE invitations
-    SET answer = ?, answered_at = CURRENT_TIMESTAMP
+    SET answer = ?, party_size = ?, answered_at = CURRENT_TIMESTAMP
     WHERE invite_key = ?
-  `).run(answer, invite_key);
+  `).run(answer, partySize, invite_key);
 
   const settings = getPublicSettings();
   const submission = settings.rsvp_email_enabled
@@ -356,6 +380,7 @@ app.post("/api/rsvp", async (req, res) => {
         inviteKey: invite_key,
         guestName: invitation.guest_name,
         answer,
+        partySize,
       })
     : null;
 

@@ -40,6 +40,12 @@ function formatDate(value) {
   });
 }
 
+function renderPartySizeOptions(selectedValue = 1) {
+  return Array.from({ length: 10 }, (_, index) => index + 1)
+    .map((value) => `<option value="${value}" ${Number(selectedValue) === value ? "selected" : ""}>${value}</option>`)
+    .join("");
+}
+
 function adminHeaders() {
   return {
     "Content-Type": "application/json",
@@ -120,6 +126,13 @@ function renderInvitationPage(invitation) {
             </label>
           </fieldset>
 
+          <label id="partySizeField" class="party-size-field" hidden>
+            <span>Câte persoane veți fi în total?</span>
+            <select id="partySize" name="party_size">
+              ${renderPartySizeOptions(invitation.party_size)}
+            </select>
+          </label>
+
           <button id="submitBtn" class="submit-btn" type="submit" disabled>Trimite răspunsul</button>
           <p id="status" class="status" role="status" aria-live="polite"></p>
         </form>
@@ -131,7 +144,13 @@ function renderInvitationPage(invitation) {
   const submitBtn = document.querySelector("#submitBtn");
 
   form.onchange = () => {
-    submitBtn.disabled = !new FormData(form).get("answer");
+    const answer = new FormData(form).get("answer");
+    const partySizeField = document.querySelector("#partySizeField");
+    const partySizeSelect = document.querySelector("#partySize");
+
+    partySizeField.hidden = answer !== "yes";
+    partySizeSelect.disabled = answer !== "yes";
+    submitBtn.disabled = !answer;
   };
 
   form.onsubmit = async (event) => {
@@ -182,6 +201,7 @@ async function sendAnswer(answer) {
     body: JSON.stringify({
       invite_key: inviteKey,
       answer,
+      party_size: answer === "yes" ? new FormData(form).get("party_size") : 1,
     }),
   });
 
@@ -279,6 +299,9 @@ function renderAdminDashboard({ summary, invitations }, settings) {
               <option value="no" ${invitation.answer === "no" ? "selected" : ""}>Nu</option>
             </select>
           </td>
+          <td>
+            <input class="table-input party-size-input" name="party_size" type="number" min="1" max="20" value="${escapeHtml(invitation.party_size || 1)}" />
+          </td>
           <td>${formatDate(invitation.answered_at)}</td>
           <td>
             <div class="row-actions">
@@ -304,6 +327,7 @@ function renderAdminDashboard({ summary, invitations }, settings) {
       <section class="summary-grid" aria-label="Rezumat invitații">
         <div><strong>${summary.total}</strong><span>Total</span></div>
         <div><strong>${summary.yes}</strong><span>Vin</span></div>
+        <div><strong>${summary.guests}</strong><span>Persoane vin</span></div>
         <div><strong>${summary.no}</strong><span>Nu vin</span></div>
         <div><strong>${summary.pending}</strong><span>Fără răspuns</span></div>
       </section>
@@ -327,6 +351,10 @@ function renderAdminDashboard({ summary, invitations }, settings) {
               <option value="no">Nu</option>
             </select>
           </label>
+          <label>
+            Persoane
+            <input name="party_size" type="number" min="1" max="20" value="1" />
+          </label>
           <button type="submit">Adaugă</button>
         </div>
         <p id="adminStatus" class="status" role="status" aria-live="polite"></p>
@@ -339,6 +367,7 @@ function renderAdminDashboard({ summary, invitations }, settings) {
               <th>Invitat</th>
               <th>Cheie</th>
               <th>Răspuns</th>
+              <th>Persoane</th>
               <th>Răspuns la</th>
               <th>Acțiuni</th>
             </tr>
@@ -385,6 +414,7 @@ function renderAdminDashboard({ summary, invitations }, settings) {
           guest_name: formData.get("guest_name"),
           invite_key: formData.get("invite_key"),
           answer: formData.get("answer"),
+          party_size: formData.get("party_size"),
         }),
       });
       form.reset();
@@ -501,6 +531,7 @@ async function updateInvitationRow(id, row, button) {
         guest_name: row.querySelector('[name="guest_name"]').value,
         invite_key: row.querySelector('[name="invite_key"]').value,
         answer: row.querySelector('[name="answer"]').value,
+        party_size: row.querySelector('[name="party_size"]').value,
       }),
     });
     await loadAdminPage();
