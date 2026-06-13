@@ -9,6 +9,6 @@ services:
       - key: NODE_VERSION
         value: 22.12.0
       - key: RSVP_EMAIL_TO
-        value: adrian.plapamaru@yahoo.com
+        value: adrian.plapamaru@gmail.com
       - key: WEB3FORMS_ACCESS_KEY
         sync: false

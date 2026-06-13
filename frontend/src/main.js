@@ -33,7 +33,7 @@ async function loadInvitation() {
 }
 
 async function sendAnswer(answer) {
-  await fetch(`${API_URL}/rsvp`, {
+  const response = await fetch(`${API_URL}/rsvp`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -43,6 +43,37 @@ async function sendAnswer(answer) {
       answer,
     }),
   });
+
+  const result = await response.json();
+
+  if (!response.ok || !result.success) {
+    document.querySelector("#status").textContent = "Răspunsul nu a putut fi trimis.";
+    return;
+  }
+
+  if (result.email?.provider === "web3forms" && result.email.submission) {
+    try {
+      const emailResponse = await fetch("https://api.web3forms.com/submit", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+        body: JSON.stringify(result.email.submission),
+      });
+
+      const emailResult = await emailResponse.json().catch(() => ({}));
+
+      if (!emailResponse.ok || emailResult.success === false) {
+        throw new Error(emailResult.message || "Emailul nu a putut fi trimis.");
+      }
+    } catch (error) {
+      console.error(error);
+      document.querySelector("#status").textContent =
+        "Răspunsul a fost salvat, dar emailul nu a putut fi trimis.";
+      return;
+    }
+  }
 
   document.querySelector("#status").textContent = "Răspunsul a fost trimis. Mulțumim!";
 }

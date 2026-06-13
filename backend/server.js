@@ -12,7 +12,7 @@ const db = new Database("wedding.db");
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const frontendDistPath = path.resolve(__dirname, "../frontend/dist");
 const port = process.env.PORT || 3001;
-const rsvpEmailTo = process.env.RSVP_EMAIL_TO || "adrian.plapamaru@yahoo.com";
+const rsvpEmailTo = process.env.RSVP_EMAIL_TO || "adrian.plapamaru@gmail.com";
 
 app.use(cors());
 app.use(express.json());
@@ -53,43 +53,28 @@ app.get("/api/invitations/:key", (req, res) => {
   res.json(row);
 });
 
-async function sendRsvpEmail({ inviteKey, guestName, answer }) {
+function createRsvpEmailSubmission({ inviteKey, guestName, answer }) {
   const accessKey = process.env.WEB3FORMS_ACCESS_KEY;
 
   if (!accessKey) {
-    console.warn("WEB3FORMS_ACCESS_KEY is not configured. RSVP email was not sent.");
-    return { sent: false, reason: "missing_access_key" };
+    return null;
   }
 
   const readableAnswer = answer === "yes" ? "Da, vin" : "Nu pot ajunge";
 
-  const response = await fetch("https://api.web3forms.com/submit", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Accept: "application/json",
-    },
-    body: JSON.stringify({
-      access_key: accessKey,
-      subject: `Raspuns invitatie nunta: ${guestName}`,
-      from_name: "Small Wedding RSVP",
-      email: rsvpEmailTo,
-      message: [
-        `Invitat: ${guestName}`,
-        `Raspuns: ${readableAnswer}`,
-        `Cheie invitatie: ${inviteKey}`,
-        `Trimis la: ${new Date().toLocaleString("ro-RO", { timeZone: "Europe/Bucharest" })}`,
-      ].join("\n"),
-    }),
-  });
-
-  const result = await response.json().catch(() => ({}));
-
-  if (!response.ok || result.success === false) {
-    throw new Error(result.message || "Email provider rejected the RSVP email.");
-  }
-
-  return { sent: true };
+  return {
+    access_key: accessKey,
+    subject: `Raspuns invitatie nunta: ${guestName}`,
+    from_name: "Small Wedding RSVP",
+    recipient: rsvpEmailTo,
+    name: guestName,
+    message: [
+      `Invitat: ${guestName}`,
+      `Raspuns: ${readableAnswer}`,
+      `Cheie invitatie: ${inviteKey}`,
+      `Trimis la: ${new Date().toLocaleString("ro-RO", { timeZone: "Europe/Bucharest" })}`,
+    ].join("\n"),
+  };
 }
 
 app.post("/api/rsvp", async (req, res) => {
@@ -113,20 +98,18 @@ app.post("/api/rsvp", async (req, res) => {
     WHERE invite_key = ?
   `).run(answer, invite_key);
 
-  let email = { sent: false };
+  const submission = createRsvpEmailSubmission({
+    inviteKey: invite_key,
+    guestName: invitation.guest_name,
+    answer,
+  });
 
-  try {
-    email = await sendRsvpEmail({
-      inviteKey: invite_key,
-      guestName: invitation.guest_name,
-      answer,
-    });
-  } catch (error) {
-    console.error("Failed to send RSVP email:", error);
-    email = { sent: false, reason: "send_failed" };
-  }
-
-  res.json({ success: true, email });
+  res.json({
+    success: true,
+    email: submission
+      ? { provider: "web3forms", submission }
+      : { provider: "web3forms", sent: false, reason: "missing_access_key" },
+  });
 });
 
 app.use(express.static(frontendDistPath));
@@ -135,6 +118,12 @@ app.get(/.*/, (req, res) => {
   res.sendFile(path.join(frontendDistPath, "index.html"));
 });
 
-app.listen(port, () => {
+const server = app.listen(port, () => {
   console.log(`Backend running on port ${port}`);
+});
+
+process.on("SIGTERM", () => {
+  server.close(() => {
+    process.exit(0);
+  });
 });
