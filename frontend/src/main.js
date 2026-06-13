@@ -1,3 +1,5 @@
+import "./style.css";
+
 const API_URL = import.meta.env.VITE_API_URL || "/api";
 const ADMIN_TOKEN_STORAGE_KEY = "small-wedding-admin-token";
 
@@ -39,22 +41,61 @@ function formatDate(value) {
 function renderInvitationPage(invitation) {
   app.innerHTML = `
     <main class="invite-page">
-      <h1>Invitație Cununie în Vamă</h1>
-      <h2>Adrian & Liliana</h2>
-      <p>Bună, ${escapeHtml(invitation.guest_name)}!</p>
-      <p>Vii la cununia noastră?</p>
+      <section class="invite-card" aria-labelledby="inviteTitle">
+        <p class="eyebrow">Vama Veche · Sandalandala</p>
+        <h1 id="inviteTitle">Invitație Cununie în Vamă</h1>
+        <h2>Adrian & Liliana</h2>
 
-      <div class="actions">
-        <button id="yesBtn">Da, vin</button>
-        <button id="noBtn">Nu pot ajunge</button>
-      </div>
+        <div class="guest-note">
+          <p>Bună, ${escapeHtml(invitation.guest_name)}!</p>
+          <p>Ne-ar bucura să fii alături de noi, cu nisip sub tălpi și mare aproape.</p>
+        </div>
 
-      <p id="status" class="status"></p>
+        <form id="rsvpForm" class="rsvp-form">
+          <fieldset>
+            <legend>Vii la cununia noastră?</legend>
+
+            <label class="rsvp-option">
+              <input type="radio" name="answer" value="yes" />
+              <span>
+                <strong>Da, vin</strong>
+                <small>Abia aștept să sărbătorim împreună.</small>
+              </span>
+            </label>
+
+            <label class="rsvp-option">
+              <input type="radio" name="answer" value="no" />
+              <span>
+                <strong>Nu pot ajunge</strong>
+                <small>Vă trimit gânduri bune de departe.</small>
+              </span>
+            </label>
+          </fieldset>
+
+          <button id="submitBtn" class="submit-btn" type="submit" disabled>Trimite răspunsul</button>
+          <p id="status" class="status" role="status" aria-live="polite"></p>
+        </form>
+      </section>
     </main>
   `;
 
-  document.querySelector("#yesBtn").onclick = () => sendAnswer("yes");
-  document.querySelector("#noBtn").onclick = () => sendAnswer("no");
+  const form = document.querySelector("#rsvpForm");
+  const submitBtn = document.querySelector("#submitBtn");
+
+  form.onchange = () => {
+    submitBtn.disabled = !new FormData(form).get("answer");
+  };
+
+  form.onsubmit = async (event) => {
+    event.preventDefault();
+    const answer = new FormData(form).get("answer");
+
+    if (!answer) {
+      return;
+    }
+
+    await sendAnswer(answer);
+  };
 }
 
 async function loadInvitation() {
@@ -75,6 +116,16 @@ async function loadInvitation() {
 }
 
 async function sendAnswer(answer) {
+  const form = document.querySelector("#rsvpForm");
+  const submitBtn = document.querySelector("#submitBtn");
+  const status = document.querySelector("#status");
+
+  form.classList.add("is-submitting");
+  submitBtn.disabled = true;
+  submitBtn.textContent = "Se trimite...";
+  status.className = "status";
+  status.textContent = "";
+
   const response = await fetch(`${API_URL}/rsvp`, {
     method: "POST",
     headers: {
@@ -87,9 +138,12 @@ async function sendAnswer(answer) {
   });
 
   const result = await response.json();
-  const status = document.querySelector("#status");
 
   if (!response.ok || !result.success) {
+    form.classList.remove("is-submitting");
+    submitBtn.disabled = false;
+    submitBtn.textContent = "Trimite răspunsul";
+    status.className = "status status-error";
     status.textContent = "Răspunsul nu a putut fi trimis.";
     return;
   }
@@ -112,11 +166,19 @@ async function sendAnswer(answer) {
       }
     } catch (error) {
       console.error(error);
+      form.classList.remove("is-submitting");
+      submitBtn.disabled = false;
+      submitBtn.textContent = "Trimite răspunsul";
+      status.className = "status status-error";
       status.textContent = "Răspunsul a fost salvat, dar emailul nu a putut fi trimis.";
       return;
     }
   }
 
+  form.classList.remove("is-submitting");
+  form.classList.add("is-complete");
+  submitBtn.textContent = "Trimis";
+  status.className = "status status-success";
   status.textContent = "Răspunsul a fost trimis. Mulțumim!";
 }
 
