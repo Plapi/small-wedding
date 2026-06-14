@@ -148,7 +148,7 @@ function createRsvpEmailSubmission({
 
   return {
     access_key: accessKey,
-    subject: `Raspuns invitatie nunta: ${guestName}`,
+    subject: `Raspuns invitatie cununie: ${guestName}`,
     from_name: "Small Wedding RSVP",
     recipient: env.RSVP_EMAIL_TO || "adrian.plapamaru@gmail.com",
     name: guestName,
