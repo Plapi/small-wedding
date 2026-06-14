@@ -117,6 +117,31 @@ code {
   background: rgba(255, 255, 255, 0.2);
 }
 
+.music-toggle {
+  position: fixed;
+  top: 18px;
+  left: 18px;
+  z-index: 4;
+  display: inline-grid;
+  place-items: center;
+  width: 46px;
+  height: 46px;
+  border: 1px solid rgba(45, 136, 147, 0.24);
+  border-radius: 50%;
+  color: var(--ink);
+  background: rgba(255, 253, 248, 0.78);
+  box-shadow: 0 12px 32px rgba(79, 61, 39, 0.14);
+  backdrop-filter: blur(12px);
+  font-size: 1.25rem;
+  font-weight: 900;
+  line-height: 1;
+}
+
+.music-toggle.is-playing {
+  color: #fffdf8;
+  background: linear-gradient(135deg, var(--sea), #216974);
+}
+
 .invite-card {
   width: min(720px, 100%);
   position: relative;

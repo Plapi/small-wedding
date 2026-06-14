@@ -11,6 +11,12 @@ const FALLBACK_INVITE_PHOTOS = [
   "/invite-photos/slide-2.svg",
   "/invite-photos/slide-3.svg",
 ];
+const INVITE_SONG = {
+  src: "/audio/a-year-without-rain.mp3",
+  title: "A Year Without Rain",
+  artist: "Selena Gomez & The Scene",
+  startAt: 11,
+};
 
 function escapeHtml(value) {
   return String(value ?? "")
@@ -173,6 +179,52 @@ function startPhotoStrip(photoTrack) {
   window.setTimeout(startWhenScrollable, 300);
 }
 
+function setupMusicPlayer() {
+  const audio = document.querySelector("#inviteSong");
+  const button = document.querySelector("#musicToggle");
+
+  if (!audio || !button) {
+    return;
+  }
+
+  let hasStarted = false;
+
+  button.addEventListener("click", async () => {
+    if (audio.paused) {
+      if (!hasStarted) {
+        audio.currentTime = INVITE_SONG.startAt;
+        hasStarted = true;
+      }
+
+      try {
+        await audio.play();
+      } catch (error) {
+        console.error(error);
+      }
+      return;
+    }
+
+    audio.pause();
+  });
+
+  audio.addEventListener("play", () => {
+    button.textContent = "❚❚";
+    button.classList.add("is-playing");
+    button.setAttribute("aria-label", "Pauză melodie");
+  });
+
+  audio.addEventListener("pause", () => {
+    button.textContent = "♪";
+    button.classList.remove("is-playing");
+    button.setAttribute("aria-label", "Pornește melodia");
+  });
+
+  audio.addEventListener("ended", () => {
+    hasStarted = false;
+    audio.currentTime = INVITE_SONG.startAt;
+  });
+}
+
 function adminHeaders() {
   return {
     "Content-Type": "application/json",
@@ -222,6 +274,9 @@ async function adminRequest(path, options = {}) {
 function renderInvitationPage(invitation, photos) {
   app.innerHTML = `
     <main class="invite-page">
+      <button id="musicToggle" class="music-toggle" type="button" aria-label="Pornește melodia">♪</button>
+      <audio id="inviteSong" src="${INVITE_SONG.src}" preload="metadata"></audio>
+
       <section class="invite-card" aria-labelledby="inviteTitle">
         <header class="invite-hero">
           <p class="eyebrow">Invitație cununie</p>
@@ -326,6 +381,7 @@ function renderInvitationPage(invitation, photos) {
   if (photoTrack) {
     startPhotoStrip(photoTrack);
   }
+  setupMusicPlayer();
 
   form.onchange = () => {
     const answer = new FormData(form).get("answer");
