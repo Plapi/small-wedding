@@ -488,6 +488,53 @@ code {
   font-size: 1.35rem;
 }
 
+.rsvp-followup {
+  max-height: 0;
+  overflow: hidden;
+  opacity: 0;
+  transition:
+    max-height 720ms cubic-bezier(0.22, 0.8, 0.28, 1),
+    opacity 260ms ease;
+}
+
+.rsvp-followup.is-visible {
+  max-height: 620px;
+  opacity: 1;
+}
+
+.rsvp-followup > * {
+  opacity: 0;
+  transform: translateY(-18px);
+  transition:
+    opacity 420ms ease,
+    transform 520ms cubic-bezier(0.22, 0.8, 0.28, 1);
+}
+
+.rsvp-followup.is-visible > * {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.rsvp-followup.is-visible > *:nth-child(1) {
+  transition-delay: 80ms;
+}
+
+.rsvp-followup.is-visible > *:nth-child(2) {
+  transition-delay: 170ms;
+}
+
+.rsvp-followup.is-visible > *:nth-child(3) {
+  transition-delay: 260ms;
+}
+
+.rsvp-followup.is-visible > *:nth-child(4) {
+  transition-delay: 320ms;
+}
+
+.rsvp-followup .is-hidden {
+  display: none;
+}
+
 .party-size-field {
   display: grid;
   gap: 8px;
@@ -642,6 +689,22 @@ code {
 
 .status-error {
   color: #a24532;
+}
+
+.emoji-rain {
+  position: fixed;
+  inset: 0;
+  z-index: 20;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.emoji-rain span {
+  position: absolute;
+  top: -48px;
+  animation: emojiFall linear forwards;
+  filter: drop-shadow(0 8px 10px rgba(79, 61, 39, 0.16));
+  will-change: transform, opacity;
 }
 
 .admin-page {
@@ -1186,6 +1249,22 @@ code {
   }
 }
 
+@keyframes emojiFall {
+  0% {
+    opacity: 0;
+    transform: translate3d(0, -10vh, 0) rotate(-12deg);
+  }
+
+  12% {
+    opacity: 1;
+  }
+
+  100% {
+    opacity: 0;
+    transform: translate3d(var(--drift), 112vh, 0) rotate(24deg);
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .intro-heart {
     display: none;
@@ -1196,6 +1275,10 @@ code {
     opacity: 1;
     transform: none;
     animation: none;
+  }
+
+  .emoji-rain {
+    display: none;
   }
 }
 

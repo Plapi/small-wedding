@@ -262,6 +262,33 @@ function setupMusicPlayer() {
   });
 }
 
+function triggerEmojiRain(type) {
+  const emojis =
+    type === "yes"
+      ? ["❤️", "💕", "✨", "🥰", "🎉", "🌊"]
+      : ["😭", "💔", "🥺", "😢", "🌧️", "😭"];
+  const rain = document.createElement("div");
+
+  rain.className = "emoji-rain";
+  rain.setAttribute("aria-hidden", "true");
+  document.body.appendChild(rain);
+
+  for (let index = 0; index < 42; index += 1) {
+    const emoji = document.createElement("span");
+    emoji.textContent = emojis[Math.floor(Math.random() * emojis.length)];
+    emoji.style.left = `${Math.random() * 100}%`;
+    emoji.style.animationDelay = `${Math.random() * 0.55}s`;
+    emoji.style.animationDuration = `${2.1 + Math.random() * 1.2}s`;
+    emoji.style.fontSize = `${1.2 + Math.random() * 1.35}rem`;
+    emoji.style.setProperty("--drift", `${Math.random() * 80 - 40}px`);
+    rain.appendChild(emoji);
+  }
+
+  window.setTimeout(() => {
+    rain.remove();
+  }, 3800);
+}
+
 function adminHeaders() {
   return {
     "Content-Type": "application/json",
@@ -414,35 +441,37 @@ function renderInvitationPage(invitation, photos) {
             </label>
           </fieldset>
 
-          <label id="partySizeField" class="party-size-field" hidden>
-            <span>Câte persoane veți fi în total?</span>
-            <select id="partySize" name="party_size">
-              ${renderPartySizeOptions(invitation.party_size)}
-            </select>
-          </label>
+          <div id="rsvpFollowup" class="rsvp-followup" aria-hidden="true">
+            <label id="partySizeField" class="party-size-field">
+              <span>Câte persoane veți fi în total?</span>
+              <select id="partySize" name="party_size" disabled>
+                ${renderPartySizeOptions(invitation.party_size)}
+              </select>
+            </label>
 
-          ${
-            invitation.accommodation_enabled
-              ? `
-                <div id="accommodationSection" class="accommodation-section" hidden>
-                  <p>Doriți să vă căutăm cazare?</p>
-                  <div class="segmented-options">
-                    <label>
-                      <input type="radio" name="accommodation_requested" value="true" />
-                      <span>Da</span>
-                    </label>
-                    <label>
-                      <input type="radio" name="accommodation_requested" value="false" />
-                      <span>Nu</span>
-                    </label>
+            ${
+              invitation.accommodation_enabled
+                ? `
+                  <div id="accommodationSection" class="accommodation-section">
+                    <p>Doriți să vă căutăm cazare?</p>
+                    <div class="segmented-options">
+                      <label>
+                        <input type="radio" name="accommodation_requested" value="true" />
+                        <span>Da</span>
+                      </label>
+                      <label>
+                        <input type="radio" name="accommodation_requested" value="false" />
+                        <span>Nu</span>
+                      </label>
+                    </div>
                   </div>
-                </div>
-              `
-              : ""
-          }
+                `
+                : ""
+            }
 
-          <button id="submitBtn" class="submit-btn" type="submit" disabled>Trimite răspunsul</button>
-          <p id="status" class="status" role="status" aria-live="polite"></p>
+            <button id="submitBtn" class="submit-btn" type="submit" disabled>Trimite răspunsul</button>
+            <p id="status" class="status" role="status" aria-live="polite"></p>
+          </div>
         </form>
       </section>
     </main>
@@ -456,19 +485,28 @@ function renderInvitationPage(invitation, photos) {
     startPhotoStrip(photoTrack);
   }
   setupMusicPlayer();
+  let previousAnswer = new FormData(form).get("answer");
 
   form.onchange = () => {
     const answer = new FormData(form).get("answer");
+    const followup = document.querySelector("#rsvpFollowup");
     const partySizeField = document.querySelector("#partySizeField");
     const partySizeSelect = document.querySelector("#partySize");
     const accommodationSection = document.querySelector("#accommodationSection");
 
-    partySizeField.hidden = answer !== "yes";
+    followup.classList.toggle("is-visible", Boolean(answer));
+    followup.setAttribute("aria-hidden", answer ? "false" : "true");
+    partySizeField.classList.toggle("is-hidden", answer !== "yes");
     partySizeSelect.disabled = answer !== "yes";
     if (accommodationSection) {
-      accommodationSection.hidden = answer !== "yes";
+      accommodationSection.classList.toggle("is-hidden", answer !== "yes");
     }
     submitBtn.disabled = !answer;
+
+    if (answer && answer !== previousAnswer) {
+      triggerEmojiRain(answer);
+      previousAnswer = answer;
+    }
   };
 
   form.onsubmit = async (event) => {
