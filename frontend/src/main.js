@@ -105,6 +105,7 @@ function startPhotoStrip(photoTrack) {
   let autoScrollTimer = null;
   let observer = null;
   let initialStartTimer = null;
+  let scrollRemainder = 0;
 
   const getMaxScroll = () => Math.max(0, slider.scrollWidth - slider.clientWidth);
 
@@ -127,7 +128,15 @@ function startPhotoStrip(photoTrack) {
         return;
       }
 
-      slider.scrollBy({ left: 0.35, behavior: "auto" });
+      scrollRemainder += 0.45;
+      const pixelsToMove = Math.floor(scrollRemainder);
+
+      if (pixelsToMove < 1) {
+        return;
+      }
+
+      scrollRemainder -= pixelsToMove;
+      slider.scrollLeft = Math.min(maxScroll, slider.scrollLeft + pixelsToMove);
     }, 28);
   };
 
@@ -176,6 +185,9 @@ function startPhotoStrip(photoTrack) {
   });
 
   window.addEventListener("load", startWhenScrollable, { once: true });
+  requestAnimationFrame(startWhenScrollable);
+  window.setTimeout(startWhenScrollable, 1000);
+  window.setTimeout(startWhenScrollable, 2500);
   window.setTimeout(startWhenScrollable, 300);
 }
 
