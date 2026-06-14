@@ -332,15 +332,25 @@ code {
   text-align: left;
 }
 
+.location-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(180px, 230px);
+  gap: clamp(16px, 4vw, 28px);
+  align-items: end;
+}
+
+.location-copy {
+  min-width: 0;
+}
+
 .location-photo {
   display: block;
   width: 100%;
-  aspect-ratio: 16 / 9;
-  margin-bottom: 18px;
+  aspect-ratio: 4 / 3;
   border: 1px solid rgba(255, 255, 255, 0.72);
   border-radius: 8px;
   object-fit: cover;
-  box-shadow: 0 16px 38px rgba(79, 61, 39, 0.12);
+  box-shadow: 0 14px 30px rgba(79, 61, 39, 0.11);
 }
 
 .location-section h2 {
@@ -1133,6 +1143,15 @@ code {
   .invite-card {
     align-self: center;
     padding: 24px 18px;
+  }
+
+  .location-layout {
+    grid-template-columns: 1fr;
+    align-items: start;
+  }
+
+  .location-photo {
+    max-width: 260px;
   }
 
   .rsvp-option {

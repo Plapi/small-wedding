@@ -341,24 +341,32 @@ function renderInvitationPage(invitation, photos) {
         </section>
 
         <section class="invite-section location-section intro-item intro-delay-5">
-          <img class="location-photo" src="/locations/casa-casatoriilor-mangalia.webp" alt="Casa Căsătoriilor din Mangalia" loading="lazy" />
-          <span class="section-kicker">Cununia oficială</span>
-          <h2>Mangalia - Casa Căsătoriilor</h2>
-          <p>Ora 16:00</p>
-          <div class="location-actions" aria-label="Locație cununie oficială">
-            <a href="https://maps.app.goo.gl/1ue5M5tJtGqJUBTD9" target="_blank" rel="noreferrer" aria-label="Deschide în Google Maps" title="Google Maps">${renderLocationIcon("google")}</a>
-            <a href="https://waze.com/ul/hsxu34qus4" target="_blank" rel="noreferrer" aria-label="Deschide în Waze" title="Waze">${renderLocationIcon("waze")}</a>
+          <div class="location-layout">
+            <div class="location-copy">
+              <span class="section-kicker">Cununia oficială</span>
+              <h2>Mangalia - Casa Căsătoriilor</h2>
+              <p>Ora 16:00</p>
+              <div class="location-actions" aria-label="Locație cununie oficială">
+                <a href="https://maps.app.goo.gl/1ue5M5tJtGqJUBTD9" target="_blank" rel="noreferrer" aria-label="Deschide în Google Maps" title="Google Maps">${renderLocationIcon("google")}</a>
+                <a href="https://waze.com/ul/hsxu34qus4" target="_blank" rel="noreferrer" aria-label="Deschide în Waze" title="Waze">${renderLocationIcon("waze")}</a>
+              </div>
+            </div>
+            <img class="location-photo" src="/locations/casa-casatoriilor-mangalia.webp" alt="Casa Căsătoriilor din Mangalia" loading="lazy" />
           </div>
         </section>
 
         <section class="invite-section location-section intro-item intro-delay-6">
-          <img class="location-photo" src="/locations/sandalandia-vama-veche.webp" alt="Sandalandia în Vama Veche" loading="lazy" />
-          <span class="section-kicker">Cina festivă</span>
-          <h2>Vama Veche - Sandalandia</h2>
-          <p>Ora 18:00</p>
-          <div class="location-actions" aria-label="Locație petrecere">
-            <a href="https://maps.app.goo.gl/d84PRW6grG4vp3sj6" target="_blank" rel="noreferrer" aria-label="Deschide în Google Maps" title="Google Maps">${renderLocationIcon("google")}</a>
-            <a href="https://waze.com/ul/hsxu2fk297" target="_blank" rel="noreferrer" aria-label="Deschide în Waze" title="Waze">${renderLocationIcon("waze")}</a>
+          <div class="location-layout">
+            <div class="location-copy">
+              <span class="section-kicker">Cina festivă</span>
+              <h2>Vama Veche - Sandalandia</h2>
+              <p>Ora 18:00</p>
+              <div class="location-actions" aria-label="Locație petrecere">
+                <a href="https://maps.app.goo.gl/d84PRW6grG4vp3sj6" target="_blank" rel="noreferrer" aria-label="Deschide în Google Maps" title="Google Maps">${renderLocationIcon("google")}</a>
+                <a href="https://waze.com/ul/hsxu2fk297" target="_blank" rel="noreferrer" aria-label="Deschide în Waze" title="Waze">${renderLocationIcon("waze")}</a>
+              </div>
+            </div>
+            <img class="location-photo" src="/locations/sandalandia-vama-veche.webp" alt="Sandalandia în Vama Veche" loading="lazy" />
           </div>
         </section>
 
