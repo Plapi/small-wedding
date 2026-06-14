@@ -91,100 +91,74 @@ function renderPhotoSlides(photos) {
 function startPhotoStrip(photoTrack) {
   const slider = photoTrack.closest(".photo-slider");
 
-  const setupAutoScroll = (attempt = 0) => {
-    if (!slider || slider.scrollWidth <= slider.clientWidth) {
-      if (attempt < 30) {
-        window.setTimeout(() => setupAutoScroll(attempt + 1), 200);
-      }
+  if (!slider) {
+    return;
+  }
+
+  let resumeTimer = null;
+  let autoScrollTimer = null;
+
+  const getMaxScroll = () => Math.max(0, slider.scrollWidth - slider.clientWidth);
+
+  const stopAutoScroll = () => {
+    window.clearInterval(autoScrollTimer);
+    autoScrollTimer = null;
+  };
+
+  const startAutoScroll = () => {
+    if (autoScrollTimer || getMaxScroll() <= 1 || slider.scrollLeft >= getMaxScroll() - 1) {
       return;
     }
 
-    let isDragging = false;
-    let dragStartX = 0;
-    let dragStartScrollLeft = 0;
-    let resumeTimer = null;
-    let autoScrollTimer = null;
+    autoScrollTimer = window.setInterval(() => {
+      const maxScroll = getMaxScroll();
 
-    const getMaxScroll = () => Math.max(0, slider.scrollWidth - slider.clientWidth);
-
-    const stopAutoScroll = () => {
-      window.clearInterval(autoScrollTimer);
-      autoScrollTimer = null;
-    };
-
-    const startAutoScroll = () => {
-      if (autoScrollTimer || getMaxScroll() <= 0 || slider.scrollLeft >= getMaxScroll() - 1) {
+      if (slider.scrollLeft >= maxScroll - 1) {
+        slider.scrollLeft = maxScroll;
+        stopAutoScroll();
         return;
       }
 
-      autoScrollTimer = window.setInterval(() => {
-        const maxScroll = getMaxScroll();
-
-        if (slider.scrollLeft >= maxScroll - 1) {
-          slider.scrollLeft = maxScroll;
-          stopAutoScroll();
-          return;
-        }
-
-        slider.scrollLeft = Math.min(maxScroll, slider.scrollLeft + 0.8);
-      }, 16);
-    };
-
-    const scheduleAutoResume = () => {
-      window.clearTimeout(resumeTimer);
-      resumeTimer = window.setTimeout(() => {
-        startAutoScroll();
-      }, 2000);
-    };
-
-    const pauseAutoScroll = () => {
-      window.clearTimeout(resumeTimer);
-      stopAutoScroll();
-    };
-
-    slider.addEventListener("pointerdown", (event) => {
-      pauseAutoScroll();
-      isDragging = true;
-      dragStartX = event.clientX;
-      dragStartScrollLeft = slider.scrollLeft;
-      slider.classList.add("is-dragging");
-      slider.setPointerCapture(event.pointerId);
-    });
-
-    slider.addEventListener("pointermove", (event) => {
-      if (!isDragging) {
-        return;
-      }
-
-      slider.scrollLeft = dragStartScrollLeft - (event.clientX - dragStartX);
-    });
-
-    slider.addEventListener("pointerup", (event) => {
-      isDragging = false;
-      slider.classList.remove("is-dragging");
-      slider.releasePointerCapture(event.pointerId);
-      scheduleAutoResume();
-    });
-
-    slider.addEventListener("pointercancel", () => {
-      isDragging = false;
-      slider.classList.remove("is-dragging");
-      scheduleAutoResume();
-    });
-
-    slider.addEventListener(
-      "wheel",
-      () => {
-        pauseAutoScroll();
-        scheduleAutoResume();
-      },
-      { passive: true }
-    );
-
-    startAutoScroll();
+      slider.scrollLeft = Math.min(maxScroll, slider.scrollLeft + 0.65);
+    }, 16);
   };
 
-  setupAutoScroll();
+  const scheduleAutoResume = () => {
+    window.clearTimeout(resumeTimer);
+    resumeTimer = window.setTimeout(startAutoScroll, 2000);
+  };
+
+  const pauseAutoScroll = () => {
+    window.clearTimeout(resumeTimer);
+    stopAutoScroll();
+  };
+
+  slider.addEventListener("touchstart", pauseAutoScroll, { passive: true });
+  slider.addEventListener("touchend", scheduleAutoResume, { passive: true });
+  slider.addEventListener("touchcancel", scheduleAutoResume, { passive: true });
+  slider.addEventListener("mousedown", pauseAutoScroll);
+  window.addEventListener("mouseup", scheduleAutoResume);
+  slider.addEventListener(
+    "wheel",
+    () => {
+      pauseAutoScroll();
+      scheduleAutoResume();
+    },
+    { passive: true }
+  );
+
+  const waitUntilScrollable = (attempt = 0) => {
+    if (getMaxScroll() > 1) {
+      startAutoScroll();
+      return;
+    }
+
+    if (attempt < 40) {
+      window.setTimeout(() => waitUntilScrollable(attempt + 1), 150);
+    }
+  };
+
+  waitUntilScrollable();
 }
 
 function adminHeaders() {
