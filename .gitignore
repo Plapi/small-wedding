@@ -146,3 +146,4 @@ vite.config.ts.timestamp-*
 # Cloudflare local state and generated private data exports
 .wrangler/
 d1/seed.sql
+.tmp-invite-photos/

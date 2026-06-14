@@ -171,33 +171,44 @@ code {
 
 .photo-slider {
   margin: clamp(26px, 6vw, 42px) 0 0;
-  overflow: hidden;
-  border-radius: 8px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  cursor: grab;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+  touch-action: pan-y;
+}
+
+.photo-slider::-webkit-scrollbar {
+  display: none;
+}
+
+.photo-slider.is-dragging {
+  cursor: grabbing;
 }
 
 .photo-track {
   display: flex;
-  transition: transform 620ms ease;
-  pointer-events: none;
+  width: max-content;
+  gap: 0;
   user-select: none;
 }
 
 .photo-slide {
-  flex: 0 0 100%;
+  flex: 0 0 auto;
   margin: 0;
   overflow: hidden;
-  border: 1px solid rgba(255, 255, 255, 0.82);
-  border-radius: 8px;
-  aspect-ratio: 16 / 10;
+  height: clamp(170px, 28vw, 260px);
   background: var(--sand);
-  box-shadow: 0 18px 42px rgba(79, 61, 39, 0.13);
 }
 
 .photo-slide img {
   display: block;
-  width: 100%;
+  width: auto;
   height: 100%;
-  object-fit: cover;
+  object-fit: contain;
+  pointer-events: none;
+  user-select: none;
 }
 
 .guest-note {

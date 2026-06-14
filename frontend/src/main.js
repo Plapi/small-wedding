@@ -6,7 +6,7 @@ const ADMIN_TOKEN_STORAGE_KEY = "small-wedding-admin-token";
 const params = new URLSearchParams(window.location.search);
 const inviteKey = params.get("key");
 const app = document.querySelector("#app");
-const INVITE_PHOTOS = [
+const FALLBACK_INVITE_PHOTOS = [
   "/invite-photos/slide-1.svg",
   "/invite-photos/slide-2.svg",
   "/invite-photos/slide-3.svg",
@@ -63,14 +63,128 @@ function renderPartySizeOptions(selectedValue = 1) {
     .join("");
 }
 
-function renderPhotoSlides() {
-  return INVITE_PHOTOS.map(
+async function loadInvitePhotos() {
+  try {
+    const response = await fetch("/invite-photos/photos.json");
+    const photos = await response.json();
+
+    if (Array.isArray(photos) && photos.length) {
+      return photos;
+    }
+  } catch (error) {
+    console.warn("Fotografiile invitației nu au putut fi încărcate.", error);
+  }
+
+  return FALLBACK_INVITE_PHOTOS;
+}
+
+function renderPhotoSlides(photos) {
+  return photos.map(
     (src, index) => `
       <figure class="photo-slide">
-        <img src="${src}" alt="Fotografie invitație ${index + 1}" loading="${index === 0 ? "eager" : "lazy"}" />
+        <img src="${src}" alt="Fotografie invitație ${index + 1}" loading="eager" />
       </figure>
     `
   ).join("");
+}
+
+function startPhotoStrip(photoTrack) {
+  const slider = photoTrack.closest(".photo-slider");
+
+  const setupAutoScroll = (attempt = 0) => {
+    if (!slider || slider.scrollWidth <= slider.clientWidth) {
+      if (attempt < 30) {
+        window.setTimeout(() => setupAutoScroll(attempt + 1), 200);
+      }
+      return;
+    }
+
+    let isDragging = false;
+    let dragStartX = 0;
+    let dragStartScrollLeft = 0;
+    let resumeTimer = null;
+    let autoScrollTimer = null;
+
+    const getMaxScroll = () => Math.max(0, slider.scrollWidth - slider.clientWidth);
+
+    const stopAutoScroll = () => {
+      window.clearInterval(autoScrollTimer);
+      autoScrollTimer = null;
+    };
+
+    const startAutoScroll = () => {
+      if (autoScrollTimer || getMaxScroll() <= 0 || slider.scrollLeft >= getMaxScroll() - 1) {
+        return;
+      }
+
+      autoScrollTimer = window.setInterval(() => {
+        const maxScroll = getMaxScroll();
+
+        if (slider.scrollLeft >= maxScroll - 1) {
+          slider.scrollLeft = maxScroll;
+          stopAutoScroll();
+          return;
+        }
+
+        slider.scrollLeft = Math.min(maxScroll, slider.scrollLeft + 0.8);
+      }, 16);
+    };
+
+    const scheduleAutoResume = () => {
+      window.clearTimeout(resumeTimer);
+      resumeTimer = window.setTimeout(() => {
+        startAutoScroll();
+      }, 2000);
+    };
+
+    const pauseAutoScroll = () => {
+      window.clearTimeout(resumeTimer);
+      stopAutoScroll();
+    };
+
+    slider.addEventListener("pointerdown", (event) => {
+      pauseAutoScroll();
+      isDragging = true;
+      dragStartX = event.clientX;
+      dragStartScrollLeft = slider.scrollLeft;
+      slider.classList.add("is-dragging");
+      slider.setPointerCapture(event.pointerId);
+    });
+
+    slider.addEventListener("pointermove", (event) => {
+      if (!isDragging) {
+        return;
+      }
+
+      slider.scrollLeft = dragStartScrollLeft - (event.clientX - dragStartX);
+    });
+
+    slider.addEventListener("pointerup", (event) => {
+      isDragging = false;
+      slider.classList.remove("is-dragging");
+      slider.releasePointerCapture(event.pointerId);
+      scheduleAutoResume();
+    });
+
+    slider.addEventListener("pointercancel", () => {
+      isDragging = false;
+      slider.classList.remove("is-dragging");
+      scheduleAutoResume();
+    });
+
+    slider.addEventListener(
+      "wheel",
+      () => {
+        pauseAutoScroll();
+        scheduleAutoResume();
+      },
+      { passive: true }
+    );
+
+    startAutoScroll();
+  };
+
+  setupAutoScroll();
 }
 
 function adminHeaders() {
@@ -119,7 +233,7 @@ async function adminRequest(path, options = {}) {
   return data;
 }
 
-function renderInvitationPage(invitation) {
+function renderInvitationPage(invitation, photos) {
   app.innerHTML = `
     <main class="invite-page">
       <section class="invite-card" aria-labelledby="inviteTitle">
@@ -130,7 +244,7 @@ function renderInvitationPage(invitation) {
 
         <section class="photo-slider" aria-label="Fotografii Adrian și Liliana">
           <div id="photoTrack" class="photo-track">
-            ${renderPhotoSlides()}
+            ${renderPhotoSlides(photos)}
           </div>
         </section>
 
@@ -155,7 +269,7 @@ function renderInvitationPage(invitation) {
         </section>
 
         <section class="invite-section location-section">
-          <span class="section-kicker">Petrecerea</span>
+          <span class="section-kicker">Cina festivă</span>
           <h2>Vama Veche - Sandalandia</h2>
           <p>Ora 18:00</p>
           <div class="location-actions" aria-label="Locație petrecere">
@@ -222,18 +336,9 @@ function renderInvitationPage(invitation) {
   const form = document.querySelector("#rsvpForm");
   const submitBtn = document.querySelector("#submitBtn");
   const photoTrack = document.querySelector("#photoTrack");
-  let slideIndex = 0;
 
   if (photoTrack) {
-    window.setInterval(() => {
-      const slides = photoTrack.querySelectorAll(".photo-slide");
-      if (!slides.length) {
-        return;
-      }
-
-      slideIndex = (slideIndex + 1) % slides.length;
-      photoTrack.style.transform = `translateX(-${slideIndex * 100}%)`;
-    }, 4200);
+    startPhotoStrip(photoTrack);
   }
 
   form.onchange = () => {
@@ -275,8 +380,8 @@ async function loadInvitation() {
     return;
   }
 
-  const invitation = await response.json();
-  renderInvitationPage(invitation);
+  const [invitation, photos] = await Promise.all([response.json(), loadInvitePhotos()]);
+  renderInvitationPage(invitation, photos);
 }
 
 async function sendAnswer(answer) {
