@@ -97,6 +97,8 @@ function startPhotoStrip(photoTrack) {
 
   let resumeTimer = null;
   let autoScrollTimer = null;
+  let observer = null;
+  let initialStartTimer = null;
 
   const getMaxScroll = () => Math.max(0, slider.scrollWidth - slider.clientWidth);
 
@@ -119,8 +121,8 @@ function startPhotoStrip(photoTrack) {
         return;
       }
 
-      slider.scrollLeft = Math.min(maxScroll, slider.scrollLeft + 0.65);
-    }, 16);
+      slider.scrollBy({ left: 0.35, behavior: "auto" });
+    }, 28);
   };
 
   const scheduleAutoResume = () => {
@@ -147,18 +149,28 @@ function startPhotoStrip(photoTrack) {
     { passive: true }
   );
 
-  const waitUntilScrollable = (attempt = 0) => {
+  const startWhenScrollable = () => {
     if (getMaxScroll() > 1) {
-      startAutoScroll();
-      return;
-    }
-
-    if (attempt < 40) {
-      window.setTimeout(() => waitUntilScrollable(attempt + 1), 150);
+      observer?.disconnect();
+      if (!initialStartTimer && !autoScrollTimer) {
+        initialStartTimer = window.setTimeout(startAutoScroll, 3000);
+      }
     }
   };
 
-  waitUntilScrollable();
+  if ("ResizeObserver" in window) {
+    observer = new ResizeObserver(startWhenScrollable);
+    observer.observe(slider);
+    observer.observe(photoTrack);
+  }
+
+  photoTrack.querySelectorAll("img").forEach((image) => {
+    image.addEventListener("load", startWhenScrollable, { once: true });
+    image.addEventListener("error", startWhenScrollable, { once: true });
+  });
+
+  window.addEventListener("load", startWhenScrollable, { once: true });
+  window.setTimeout(startWhenScrollable, 300);
 }
 
 function adminHeaders() {
