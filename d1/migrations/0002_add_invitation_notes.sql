@@ -1,0 +1,2 @@
+ALTER TABLE invitations
+ADD COLUMN notes TEXT NOT NULL DEFAULT '';

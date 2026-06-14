@@ -6,6 +6,7 @@ CREATE TABLE IF NOT EXISTS invitations (
   party_size INTEGER NOT NULL DEFAULT 1,
   accommodation_enabled INTEGER NOT NULL DEFAULT 0,
   accommodation_requested INTEGER NOT NULL DEFAULT 0,
+  notes TEXT NOT NULL DEFAULT '',
   sort_order INTEGER NOT NULL DEFAULT 0,
   answered_at TEXT
 );

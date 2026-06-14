@@ -469,6 +469,11 @@ function renderInvitationPage(invitation, photos) {
                 : ""
             }
 
+            <label id="notesField" class="notes-field">
+              <span>Alte mențiuni</span>
+              <textarea id="notes" name="notes" rows="4" maxlength="1000" placeholder="Ex: alergii, preferințe, alte detalii pe care vrei să ni le spui"></textarea>
+            </label>
+
             <button id="submitBtn" class="submit-btn" type="submit" disabled>Trimite răspunsul</button>
             <p id="status" class="status" role="status" aria-live="polite"></p>
           </div>
@@ -494,12 +499,16 @@ function renderInvitationPage(invitation, photos) {
     const partySizeField = document.querySelector("#partySizeField");
     const partySizeSelect = document.querySelector("#partySize");
     const accommodationSection = document.querySelector("#accommodationSection");
+    const notesField = document.querySelector("#notesField");
+    const notesInput = document.querySelector("#notes");
     const needsAccommodationAnswer = answer === "yes" && Boolean(accommodationSection);
 
     followup.classList.toggle("is-visible", Boolean(answer));
     followup.setAttribute("aria-hidden", answer ? "false" : "true");
     partySizeField.classList.toggle("is-hidden", answer !== "yes");
     partySizeSelect.disabled = answer !== "yes";
+    notesField.classList.toggle("is-hidden", answer !== "yes");
+    notesInput.disabled = answer !== "yes";
     if (accommodationSection) {
       accommodationSection.classList.toggle("is-hidden", answer !== "yes");
     }
@@ -562,6 +571,7 @@ async function sendAnswer(answer) {
       party_size: answer === "yes" ? new FormData(form).get("party_size") : 1,
       accommodation_requested:
         answer === "yes" ? new FormData(form).get("accommodation_requested") === "true" : false,
+      notes: answer === "yes" ? new FormData(form).get("notes") : "",
     }),
   });
 
@@ -691,6 +701,11 @@ function renderAdminDashboard({ summary, invitations }, settings) {
               <option value="true" ${invitation.accommodation_requested ? "selected" : ""}>Da</option>
               </select>
             </label>
+
+            <label class="wide-field">
+              Mențiuni
+              <textarea class="table-input" name="notes" rows="3" placeholder="Ex: alergii, preferințe, alte detalii">${escapeHtml(invitation.notes || "")}</textarea>
+            </label>
           </div>
 
           <footer class="invitation-card-footer">
@@ -751,6 +766,10 @@ function renderAdminDashboard({ summary, invitations }, settings) {
             <span>Cazare disponibilă</span>
             <input name="accommodation_enabled" type="checkbox" />
           </label>
+          <label class="wide-field">
+            Mențiuni
+            <textarea name="notes" rows="3" placeholder="Opțional"></textarea>
+          </label>
         </div>
         <div class="admin-panel-actions">
           <button type="submit">Adaugă invitația</button>
@@ -806,6 +825,7 @@ function renderAdminDashboard({ summary, invitations }, settings) {
           answer: formData.get("answer"),
           party_size: formData.get("party_size"),
           accommodation_enabled: formData.get("accommodation_enabled") === "on",
+          notes: formData.get("notes"),
         }),
       });
       form.reset();
@@ -927,6 +947,7 @@ async function updateInvitationRow(id, card, button) {
         party_size: card.querySelector('[name="party_size"]').value,
         accommodation_enabled: card.querySelector('[name="accommodation_enabled"]').checked,
         accommodation_requested: card.querySelector('[name="accommodation_requested"]').value === "true",
+        notes: card.querySelector('[name="notes"]').value,
       }),
     });
     await loadAdminPage();

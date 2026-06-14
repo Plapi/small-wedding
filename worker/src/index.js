@@ -31,6 +31,10 @@ function normalizeBoolean(value) {
   return value === true || value === "true" || value === "on" || value === 1 || value === "1" ? 1 : 0;
 }
 
+function normalizeNotes(value) {
+  return String(value || "").trim().slice(0, 1000);
+}
+
 function generateInviteKey() {
   const bytes = new Uint8Array(9);
   crypto.getRandomValues(bytes);
@@ -51,7 +55,7 @@ async function generateUniqueInviteKey(env) {
 async function getInvitationById(env, id) {
   return env.DB.prepare(
     `SELECT id, invite_key, guest_name, answer, party_size, accommodation_enabled,
-            accommodation_requested, sort_order, answered_at
+            accommodation_requested, notes, sort_order, answered_at
      FROM invitations
      WHERE id = ?`
   )
@@ -135,6 +139,7 @@ function createRsvpEmailSubmission({
   partySize,
   accommodationEnabled,
   accommodationRequested,
+  notes,
 }) {
   const accessKey = getWeb3FormsAccessKey(request, env);
 
@@ -158,6 +163,7 @@ function createRsvpEmailSubmission({
       `Persoane: ${partySize}`,
       `Cazare disponibila pentru invitatie: ${accommodationEnabled ? "Da" : "Nu"}`,
       `Cazare solicitata: ${readableAccommodation}`,
+      `Mentiuni: ${notes || "Nu sunt"}`,
       `Cheie invitatie: ${inviteKey}`,
       `Trimis la: ${new Date().toLocaleString("ro-RO", { timeZone: "Europe/Bucharest" })}`,
     ].join("\n"),
@@ -167,7 +173,7 @@ function createRsvpEmailSubmission({
 async function getPublicInvitation(request, env, key) {
   const row = await env.DB.prepare(
     `SELECT id, invite_key, guest_name, answer, party_size, accommodation_enabled,
-            accommodation_requested, sort_order, answered_at
+            accommodation_requested, notes, sort_order, answered_at
      FROM invitations
      WHERE invite_key = ?`
   )
@@ -188,7 +194,7 @@ async function getAdminInvitations(request, env) {
 
   const { results: invitations } = await env.DB.prepare(
     `SELECT id, invite_key, guest_name, answer, party_size, accommodation_enabled,
-            accommodation_requested, sort_order, answered_at
+            accommodation_requested, notes, sort_order, answered_at
      FROM invitations
      ORDER BY sort_order ASC, id ASC`
   ).all();
@@ -230,6 +236,7 @@ async function createAdminInvitation(request, env) {
   const partySize = normalizePartySize(body.party_size);
   const accommodationEnabled = normalizeBoolean(body.accommodation_enabled);
   const accommodationRequested = accommodationEnabled ? normalizeBoolean(body.accommodation_requested) : 0;
+  const notes = answer === "yes" ? normalizeNotes(body.notes) : "";
   const orderRow = await env.DB.prepare("SELECT COALESCE(MAX(sort_order), 0) + 1 AS next_order FROM invitations").first();
   const sortOrder = orderRow?.next_order || 1;
 
@@ -241,8 +248,8 @@ async function createAdminInvitation(request, env) {
     const result = await env.DB.prepare(
       `INSERT INTO invitations (
         invite_key, guest_name, answer, party_size, accommodation_enabled,
-        accommodation_requested, sort_order, answered_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
+        accommodation_requested, notes, sort_order, answered_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`
     )
       .bind(
         inviteKey,
@@ -251,6 +258,7 @@ async function createAdminInvitation(request, env) {
         partySize,
         accommodationEnabled,
         accommodationRequested,
+        notes,
         sortOrder,
         answer ? new Date().toISOString() : null
       )
@@ -299,6 +307,7 @@ async function updateAdminInvitation(request, env, id) {
   const partySize = normalizePartySize(body.party_size);
   const accommodationEnabled = normalizeBoolean(body.accommodation_enabled);
   const accommodationRequested = accommodationEnabled ? normalizeBoolean(body.accommodation_requested) : 0;
+  const notes = answer === "yes" ? normalizeNotes(body.notes) : "";
 
   if (!guestName || !inviteKey) {
     return json({ error: "Numele și cheia sunt obligatorii" }, 400);
@@ -311,10 +320,10 @@ async function updateAdminInvitation(request, env, id) {
     await env.DB.prepare(
       `UPDATE invitations
        SET invite_key = ?, guest_name = ?, answer = ?, answered_at = ?, party_size = ?,
-           accommodation_enabled = ?, accommodation_requested = ?
+           accommodation_enabled = ?, accommodation_requested = ?, notes = ?
        WHERE id = ?`
     )
-      .bind(inviteKey, guestName, answer, answeredAt, partySize, accommodationEnabled, accommodationRequested, id)
+      .bind(inviteKey, guestName, answer, answeredAt, partySize, accommodationEnabled, accommodationRequested, notes, id)
       .run();
 
     return json({ success: true, invitation: await getInvitationById(env, id) });
@@ -375,6 +384,7 @@ async function saveRsvp(request, env) {
   const body = await readJson(request);
   const { invite_key: inviteKey, answer } = body;
   const partySize = normalizePartySize(body.party_size);
+  const notes = answer === "yes" ? normalizeNotes(body.notes) : "";
 
   if (!inviteKey || !["yes", "no"].includes(answer)) {
     return json({ error: "Răspuns invalid" }, 400);
@@ -391,10 +401,10 @@ async function saveRsvp(request, env) {
 
   await env.DB.prepare(
     `UPDATE invitations
-     SET answer = ?, party_size = ?, accommodation_requested = ?, answered_at = CURRENT_TIMESTAMP
+     SET answer = ?, party_size = ?, accommodation_requested = ?, notes = ?, answered_at = CURRENT_TIMESTAMP
      WHERE invite_key = ?`
   )
-    .bind(answer, partySize, accommodationRequested, inviteKey)
+    .bind(answer, partySize, accommodationRequested, notes, inviteKey)
     .run();
 
   const settings = await getPublicSettings(env);
@@ -408,6 +418,7 @@ async function saveRsvp(request, env) {
         partySize,
         accommodationEnabled: Boolean(invitation.accommodation_enabled),
         accommodationRequested,
+        notes,
       })
     : null;
 

@@ -558,6 +558,26 @@ code {
   background: rgba(255, 255, 255, 0.72);
 }
 
+.notes-field {
+  display: grid;
+  gap: 8px;
+  margin-top: 16px;
+  text-align: left;
+  color: var(--ink);
+  font-weight: 750;
+}
+
+.notes-field textarea {
+  width: 100%;
+  min-height: 104px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 12px;
+  color: var(--ink);
+  background: rgba(255, 255, 255, 0.72);
+  resize: vertical;
+}
+
 .accommodation-section {
   margin-top: 16px;
   text-align: left;
@@ -812,6 +832,7 @@ code {
 
 .admin-form-grid input,
 .admin-form-grid select,
+.admin-form-grid textarea,
 .table-input {
   width: 100%;
   min-height: 38px;
@@ -820,6 +841,13 @@ code {
   padding: 0 10px;
   color: var(--ink);
   background: #fffefa;
+}
+
+textarea.table-input,
+.admin-form-grid textarea {
+  min-height: 88px;
+  padding: 10px;
+  resize: vertical;
 }
 
 .admin-form-grid button,

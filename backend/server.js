@@ -32,6 +32,7 @@ db.exec(`
     party_size INTEGER NOT NULL DEFAULT 1,
     accommodation_enabled INTEGER NOT NULL DEFAULT 0,
     accommodation_requested INTEGER NOT NULL DEFAULT 0,
+    notes TEXT NOT NULL DEFAULT '',
     sort_order INTEGER NOT NULL DEFAULT 0,
     answered_at TEXT
   );
@@ -63,6 +64,10 @@ if (!invitationColumns.some((column) => column.name === "accommodation_enabled")
 
 if (!invitationColumns.some((column) => column.name === "accommodation_requested")) {
   db.exec("ALTER TABLE invitations ADD COLUMN accommodation_requested INTEGER NOT NULL DEFAULT 0");
+}
+
+if (!invitationColumns.some((column) => column.name === "notes")) {
+  db.exec("ALTER TABLE invitations ADD COLUMN notes TEXT NOT NULL DEFAULT ''");
 }
 
 if (invitationColumns.some((column) => column.name === "room_count")) {
@@ -110,11 +115,15 @@ function normalizeBoolean(value) {
   return value === true || value === "true" || value === "on" || value === 1 || value === "1" ? 1 : 0;
 }
 
+function normalizeNotes(value) {
+  return String(value || "").trim().slice(0, 1000);
+}
+
 function getInvitationById(id) {
   return db
     .prepare(
       `SELECT id, invite_key, guest_name, answer, party_size, accommodation_enabled,
-              accommodation_requested, sort_order, answered_at
+              accommodation_requested, notes, sort_order, answered_at
        FROM invitations
        WHERE id = ?`
     )
@@ -165,7 +174,7 @@ app.get("/api/invitations/:key", (req, res) => {
   const row = db
     .prepare(
       `SELECT id, invite_key, guest_name, answer, party_size, accommodation_enabled,
-              accommodation_requested, sort_order, answered_at
+              accommodation_requested, notes, sort_order, answered_at
        FROM invitations
        WHERE invite_key = ?`
     )
@@ -191,7 +200,7 @@ app.get("/api/admin/invitations", (req, res) => {
   const invitations = db
     .prepare(
       `SELECT id, invite_key, guest_name, answer, party_size, accommodation_enabled,
-              accommodation_requested, sort_order, answered_at
+              accommodation_requested, notes, sort_order, answered_at
        FROM invitations
        ORDER BY sort_order ASC, id ASC`
     )
@@ -233,6 +242,7 @@ app.post("/api/admin/invitations", (req, res) => {
   const partySize = normalizePartySize(req.body.party_size);
   const accommodationEnabled = normalizeBoolean(req.body.accommodation_enabled);
   const accommodationRequested = accommodationEnabled ? normalizeBoolean(req.body.accommodation_requested) : 0;
+  const notes = answer === "yes" ? normalizeNotes(req.body.notes) : "";
   const sortOrder = db.prepare("SELECT COALESCE(MAX(sort_order), 0) + 1 AS next_order FROM invitations").get()
     .next_order;
 
@@ -245,8 +255,8 @@ app.post("/api/admin/invitations", (req, res) => {
       .prepare(
         `INSERT INTO invitations (
           invite_key, guest_name, answer, party_size, accommodation_enabled,
-          accommodation_requested, sort_order, answered_at
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
+          accommodation_requested, notes, sort_order, answered_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`
       )
       .run(
         inviteKey,
@@ -255,6 +265,7 @@ app.post("/api/admin/invitations", (req, res) => {
         partySize,
         accommodationEnabled,
         accommodationRequested,
+        notes,
         sortOrder,
         answer ? new Date().toISOString() : null
       );
@@ -306,6 +317,7 @@ app.put("/api/admin/invitations/:id", (req, res) => {
   const partySize = normalizePartySize(req.body.party_size);
   const accommodationEnabled = normalizeBoolean(req.body.accommodation_enabled);
   const accommodationRequested = accommodationEnabled ? normalizeBoolean(req.body.accommodation_requested) : 0;
+  const notes = answer === "yes" ? normalizeNotes(req.body.notes) : "";
 
   if (!guestName || !inviteKey) {
     return res.status(400).json({ error: "Numele și cheia sunt obligatorii" });
@@ -318,7 +330,7 @@ app.put("/api/admin/invitations/:id", (req, res) => {
     db.prepare(
       `UPDATE invitations
        SET invite_key = ?, guest_name = ?, answer = ?, answered_at = ?, party_size = ?,
-           accommodation_enabled = ?, accommodation_requested = ?
+           accommodation_enabled = ?, accommodation_requested = ?, notes = ?
        WHERE id = ?`
     ).run(
       inviteKey,
@@ -328,6 +340,7 @@ app.put("/api/admin/invitations/:id", (req, res) => {
       partySize,
       accommodationEnabled,
       accommodationRequested,
+      notes,
       id
     );
 
@@ -422,6 +435,7 @@ function createRsvpEmailSubmission({
   partySize,
   accommodationEnabled,
   accommodationRequested,
+  notes,
 }) {
   const accessKey = getWeb3FormsAccessKey(req);
 
@@ -445,6 +459,7 @@ function createRsvpEmailSubmission({
       `Persoane: ${partySize}`,
       `Cazare disponibila pentru invitatie: ${accommodationEnabled ? "Da" : "Nu"}`,
       `Cazare solicitata: ${readableAccommodation}`,
+      `Mentiuni: ${notes || "Nu sunt"}`,
       `Cheie invitatie: ${inviteKey}`,
       `Trimis la: ${new Date().toLocaleString("ro-RO", { timeZone: "Europe/Bucharest" })}`,
     ].join("\n"),
@@ -454,6 +469,7 @@ function createRsvpEmailSubmission({
 app.post("/api/rsvp", async (req, res) => {
   const { invite_key, answer } = req.body;
   const partySize = normalizePartySize(req.body.party_size);
+  const notes = answer === "yes" ? normalizeNotes(req.body.notes) : "";
 
   if (!invite_key || !["yes", "no"].includes(answer)) {
     return res.status(400).json({ error: "Răspuns invalid" });
@@ -472,9 +488,9 @@ app.post("/api/rsvp", async (req, res) => {
 
   db.prepare(`
     UPDATE invitations
-    SET answer = ?, party_size = ?, accommodation_requested = ?, answered_at = CURRENT_TIMESTAMP
+    SET answer = ?, party_size = ?, accommodation_requested = ?, notes = ?, answered_at = CURRENT_TIMESTAMP
     WHERE invite_key = ?
-  `).run(answer, partySize, accommodationRequested, invite_key);
+  `).run(answer, partySize, accommodationRequested, notes, invite_key);
 
   const settings = getPublicSettings();
   const submission = settings.rsvp_email_enabled
@@ -486,6 +502,7 @@ app.post("/api/rsvp", async (req, res) => {
         partySize,
         accommodationEnabled: Boolean(invitation.accommodation_enabled),
         accommodationRequested,
+        notes,
       })
     : null;
 

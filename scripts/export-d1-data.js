@@ -29,7 +29,7 @@ function sqlValue(value) {
 
 const invitations = query(`
   SELECT id, invite_key, guest_name, answer, party_size, accommodation_enabled,
-         accommodation_requested, sort_order, answered_at
+         accommodation_requested, notes, sort_order, answered_at
   FROM invitations
   ORDER BY sort_order ASC, id ASC
 `);
@@ -47,8 +47,8 @@ const lines = [
 
 for (const invitation of invitations) {
   lines.push(
-    `INSERT INTO invitations (` +
-      `id, invite_key, guest_name, answer, party_size, accommodation_enabled, accommodation_requested, sort_order, answered_at` +
+      `INSERT INTO invitations (` +
+      `id, invite_key, guest_name, answer, party_size, accommodation_enabled, accommodation_requested, notes, sort_order, answered_at` +
       `) VALUES (` +
       [
         invitation.id,
@@ -58,6 +58,7 @@ for (const invitation of invitations) {
         invitation.party_size,
         invitation.accommodation_enabled,
         invitation.accommodation_requested,
+        invitation.notes,
         invitation.sort_order,
         invitation.answered_at,
       ]
