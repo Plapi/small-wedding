@@ -381,6 +381,9 @@ code {
 
 .location-copy {
   min-width: 0;
+  display: grid;
+  justify-items: center;
+  text-align: center;
 }
 
 .location-photo {
@@ -407,6 +410,7 @@ code {
 .location-actions {
   display: flex;
   flex-wrap: wrap;
+  justify-content: center;
   gap: 10px;
   margin-top: 18px;
 }
@@ -681,6 +685,11 @@ code {
   min-height: 28px;
   margin: 14px 0 0;
   font-weight: 650;
+}
+
+.status:empty {
+  min-height: 0;
+  margin-top: 0;
 }
 
 .status-success {
@@ -1283,9 +1292,14 @@ code {
 }
 
 @media (max-width: 720px) {
+  #app {
+    min-height: auto;
+  }
+
   .invite-page {
     align-items: stretch;
-    padding: 14px 14px 18px;
+    min-height: auto;
+    padding: 14px;
   }
 
   .invite-page::before {
@@ -1299,11 +1313,27 @@ code {
 
   .location-layout {
     grid-template-columns: 1fr;
+    justify-items: center;
     align-items: start;
+    text-align: center;
+  }
+
+  .location-copy {
+    display: grid;
+    justify-items: center;
   }
 
   .location-photo {
     max-width: 260px;
+  }
+
+  .location-section,
+  .dress-code-section {
+    text-align: center;
+  }
+
+  .location-actions {
+    justify-content: center;
   }
 
   .story-section {
