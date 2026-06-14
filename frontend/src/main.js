@@ -335,12 +335,19 @@ function renderInvitationPage(invitation, photos) {
           <p>Ne-ar bucura să fii alături de noi, cu nisip sub tălpi și mare aproape.</p>
         </div>
 
-        <section class="invite-section date-section intro-item intro-delay-4">
+        <section class="invite-section story-section intro-item intro-delay-4">
+          <span class="section-kicker">Despre noi</span>
+          <p>Acum 9 ani ne-am întâlnit în Silver Church. Nu ne imaginam atunci că vom ajunge aici, dar nici că o cerere în căsătorie plănuită pentru New York se va muta, cu tot cu emoții, în sufragerie.</p>
+          <p>Prima noastră „vacanță” oficială de cuplu a fost în Vama Veche, alături de prieteni. Nu știam atunci că, peste ani, ne vom întoarce aici pentru a sărbători cununia noastră.</p>
+          <p>Iar dacă organizarea a durat atât, este pentru că avem un talent aparte: analizăm fiecare detaliu până când aproape nu mai facem nimic. De data aceasta însă ne-a ieșit și ne bucurăm să împărțim momentul cu voi.</p>
+        </section>
+
+        <section class="invite-section date-section intro-item intro-delay-5">
           <span class="section-kicker">Data</span>
           <h2>25 Iulie 2026</h2>
         </section>
 
-        <section class="invite-section location-section intro-item intro-delay-5">
+        <section class="invite-section location-section intro-item intro-delay-6">
           <div class="location-layout">
             <div class="location-copy">
               <span class="section-kicker">Cununia oficială</span>
@@ -355,7 +362,7 @@ function renderInvitationPage(invitation, photos) {
           </div>
         </section>
 
-        <section class="invite-section location-section intro-item intro-delay-6">
+        <section class="invite-section location-section intro-item intro-delay-7">
           <div class="location-layout">
             <div class="location-copy">
               <span class="section-kicker">Cina festivă</span>
@@ -370,7 +377,7 @@ function renderInvitationPage(invitation, photos) {
           </div>
         </section>
 
-        <form id="rsvpForm" class="rsvp-form intro-item intro-delay-7">
+        <form id="rsvpForm" class="rsvp-form intro-item intro-delay-8">
           <fieldset>
             <legend>Vii la cununia noastră?</legend>
 
