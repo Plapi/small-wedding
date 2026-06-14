@@ -341,6 +341,7 @@ function renderInvitationPage(invitation, photos) {
         </section>
 
         <section class="invite-section location-section intro-item intro-delay-5">
+          <img class="location-photo" src="/locations/casa-casatoriilor-mangalia.webp" alt="Casa Căsătoriilor din Mangalia" loading="lazy" />
           <span class="section-kicker">Cununia oficială</span>
           <h2>Mangalia - Casa Căsătoriilor</h2>
           <p>Ora 16:00</p>
@@ -351,6 +352,7 @@ function renderInvitationPage(invitation, photos) {
         </section>
 
         <section class="invite-section location-section intro-item intro-delay-6">
+          <img class="location-photo" src="/locations/sandalandia-vama-veche.webp" alt="Sandalandia în Vama Veche" loading="lazy" />
           <span class="section-kicker">Cina festivă</span>
           <h2>Vama Veche - Sandalandia</h2>
           <p>Ora 18:00</p>

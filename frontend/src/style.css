@@ -332,6 +332,17 @@ code {
   text-align: left;
 }
 
+.location-photo {
+  display: block;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  margin-bottom: 18px;
+  border: 1px solid rgba(255, 255, 255, 0.72);
+  border-radius: 8px;
+  object-fit: cover;
+  box-shadow: 0 16px 38px rgba(79, 61, 39, 0.12);
+}
+
 .location-section h2 {
   color: var(--ink);
   font-size: clamp(1.45rem, 5vw, 2.25rem);
