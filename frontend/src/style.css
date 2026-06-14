@@ -1336,6 +1336,15 @@ code {
     justify-content: center;
   }
 
+  .rsvp-form {
+    margin-top: 30px;
+    padding-top: 26px;
+  }
+
+  .rsvp-followup.is-visible {
+    max-height: 430px;
+  }
+
   .story-section {
     padding: 24px 18px;
     background:
