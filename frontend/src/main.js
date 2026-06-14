@@ -94,6 +94,31 @@ function renderPhotoSlides(photos) {
   ).join("");
 }
 
+function renderLocationIcon(type) {
+  if (type === "google") {
+    return `
+      <svg aria-hidden="true" viewBox="0 0 24 24" class="location-icon location-icon-google">
+        <path fill="#34a853" d="M12 22s7-6.13 7-13A7 7 0 0 0 5 9c0 6.87 7 13 7 13"/>
+        <path fill="#fbbc04" d="M12 2v7l-5.6 3.2A7 7 0 0 1 12 2"/>
+        <path fill="#4285f4" d="M12 22s7-6.13 7-13c0-2.02-.86-3.84-2.24-5.12L12 9z"/>
+        <path fill="#ea4335" d="M12 2a7 7 0 0 1 4.76 1.88L12 9z"/>
+        <circle cx="12" cy="9" r="2.35" fill="#fff"/>
+      </svg>
+    `;
+  }
+
+  return `
+    <svg aria-hidden="true" viewBox="0 0 24 24" class="location-icon location-icon-waze">
+      <path fill="#7bdff2" d="M20.5 10.1c0-4.16-3.38-7.1-8.12-7.1-5.02 0-8.61 3.34-8.61 7.89 0 1.4.35 2.7.98 3.82-.48.8-1.14 1.27-2.08 1.54.83.84 1.96 1.18 3.09 1.02 1.52 1.28 3.62 2.03 6.01 2.03 5.05 0 8.73-3.7 8.73-9.2"/>
+      <circle cx="8.35" cy="20" r="1.9" fill="#263238"/>
+      <circle cx="16.8" cy="20" r="1.9" fill="#263238"/>
+      <circle cx="9.3" cy="10.2" r="1" fill="#263238"/>
+      <circle cx="15.1" cy="10.2" r="1" fill="#263238"/>
+      <path fill="none" stroke="#263238" stroke-linecap="round" stroke-width="1.4" d="M10 14c1.4 1.1 3.2 1.1 4.5 0"/>
+    </svg>
+  `;
+}
+
 function startPhotoStrip(photoTrack) {
   const slider = photoTrack.closest(".photo-slider");
 
@@ -320,8 +345,8 @@ function renderInvitationPage(invitation, photos) {
           <h2>Mangalia - Casa Căsătoriilor</h2>
           <p>Ora 16:00</p>
           <div class="location-actions" aria-label="Locație cununie oficială">
-            <a href="https://maps.app.goo.gl/1ue5M5tJtGqJUBTD9" target="_blank" rel="noreferrer">Google Maps</a>
-            <a href="https://waze.com/ul/hsxu34qus4" target="_blank" rel="noreferrer">Waze</a>
+            <a href="https://maps.app.goo.gl/1ue5M5tJtGqJUBTD9" target="_blank" rel="noreferrer" aria-label="Deschide în Google Maps" title="Google Maps">${renderLocationIcon("google")}</a>
+            <a href="https://waze.com/ul/hsxu34qus4" target="_blank" rel="noreferrer" aria-label="Deschide în Waze" title="Waze">${renderLocationIcon("waze")}</a>
           </div>
         </section>
 
@@ -330,8 +355,8 @@ function renderInvitationPage(invitation, photos) {
           <h2>Vama Veche - Sandalandia</h2>
           <p>Ora 18:00</p>
           <div class="location-actions" aria-label="Locație petrecere">
-            <a href="https://maps.app.goo.gl/d84PRW6grG4vp3sj6" target="_blank" rel="noreferrer">Google Maps</a>
-            <a href="https://waze.com/ul/hsxu2fk297" target="_blank" rel="noreferrer">Waze</a>
+            <a href="https://maps.app.goo.gl/d84PRW6grG4vp3sj6" target="_blank" rel="noreferrer" aria-label="Deschide în Google Maps" title="Google Maps">${renderLocationIcon("google")}</a>
+            <a href="https://waze.com/ul/hsxu2fk297" target="_blank" rel="noreferrer" aria-label="Deschide în Waze" title="Waze">${renderLocationIcon("waze")}</a>
           </div>
         </section>
 
