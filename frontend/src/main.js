@@ -377,7 +377,18 @@ function renderInvitationPage(invitation, photos) {
           </div>
         </section>
 
-        <form id="rsvpForm" class="rsvp-form intro-item intro-delay-8">
+        <section class="invite-section dress-code-section intro-item intro-delay-8">
+          <div class="location-layout">
+            <div class="location-copy">
+              <span class="section-kicker">Ținută</span>
+              <h2>Alb, lejer, de vară</h2>
+              <p>Nu ne dorim o ținută festivă strictă. Ne-ar bucura ca fiecare să poarte ceva alb, dacă are chef și îi vine natural, dar nu este obligatoriu. O cămașă albă, o rochie lejeră sau ceva casual de vară sunt mai mult decât potrivite.</p>
+            </div>
+            <img class="location-photo dress-code-photo" src="/dress-code/white-summer-outfit.webp" alt="Ținută albă lejeră de vară" loading="lazy" />
+          </div>
+        </section>
+
+        <form id="rsvpForm" class="rsvp-form intro-item intro-delay-9">
           <fieldset>
             <legend>Vii la cununia noastră?</legend>
 

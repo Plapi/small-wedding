@@ -221,6 +221,10 @@ code {
   animation-delay: 3.97s;
 }
 
+.intro-delay-9 {
+  animation-delay: 4.14s;
+}
+
 .invite-card::before {
   content: "";
   display: block;
@@ -435,6 +439,31 @@ code {
   width: 28px;
   height: 28px;
   display: block;
+}
+
+.dress-code-section {
+  text-align: left;
+  border-color: rgba(45, 136, 147, 0.22);
+}
+
+.dress-code-photo {
+  padding: 14px;
+  background: linear-gradient(135deg, #fff 0%, #fffdf8 52%, var(--sea-soft) 100%);
+  object-fit: contain;
+}
+
+.dress-code-section h2 {
+  margin: 0;
+  color: var(--ink);
+  font-family: var(--serif);
+  font-size: clamp(1.45rem, 5vw, 2.2rem);
+  font-weight: 500;
+}
+
+.dress-code-section p {
+  margin: 10px 0 0;
+  color: var(--muted);
+  line-height: 1.7;
 }
 
 .rsvp-form {
@@ -1173,7 +1202,11 @@ code {
 @media (max-width: 720px) {
   .invite-page {
     align-items: stretch;
-    padding: 14px 14px 54px;
+    padding: 14px 14px 18px;
+  }
+
+  .invite-page::before {
+    display: none;
   }
 
   .invite-card {
