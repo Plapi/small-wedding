@@ -128,7 +128,7 @@ function startPhotoStrip(photoTrack) {
         return;
       }
 
-      scrollRemainder += 0.45;
+      scrollRemainder += 0.7;
       const pixelsToMove = Math.floor(scrollRemainder);
 
       if (pixelsToMove < 1) {
@@ -168,7 +168,7 @@ function startPhotoStrip(photoTrack) {
     if (getMaxScroll() > 1) {
       observer?.disconnect();
       if (!initialStartTimer && !autoScrollTimer) {
-        initialStartTimer = window.setTimeout(startAutoScroll, 3000);
+        initialStartTimer = window.setTimeout(startAutoScroll, 4500);
       }
     }
   };
@@ -285,33 +285,37 @@ async function adminRequest(path, options = {}) {
 
 function renderInvitationPage(invitation, photos) {
   app.innerHTML = `
-    <main class="invite-page">
+    <main class="invite-page has-intro">
+      <div class="intro-heart" aria-hidden="true">
+        <span>♥</span>
+      </div>
+
       <button id="musicToggle" class="music-toggle" type="button" aria-label="Pornește melodia">♪</button>
       <audio id="inviteSong" src="${INVITE_SONG.src}" preload="metadata"></audio>
 
       <section class="invite-card" aria-labelledby="inviteTitle">
-        <header class="invite-hero">
+        <header class="invite-hero intro-item intro-delay-1">
           <p class="eyebrow">Invitație cununie</p>
           <h1 id="inviteTitle">Adrian & Liliana</h1>
         </header>
 
-        <section class="photo-slider" aria-label="Fotografii Adrian și Liliana">
+        <section class="photo-slider intro-item intro-delay-2" aria-label="Fotografii Adrian și Liliana">
           <div id="photoTrack" class="photo-track">
             ${renderPhotoSlides(photos)}
           </div>
         </section>
 
-        <div class="guest-note">
+        <div class="guest-note intro-item intro-delay-3">
           <p>Bună, ${escapeHtml(invitation.guest_name)}!</p>
           <p>Ne-ar bucura să fii alături de noi, cu nisip sub tălpi și mare aproape.</p>
         </div>
 
-        <section class="invite-section date-section">
+        <section class="invite-section date-section intro-item intro-delay-4">
           <span class="section-kicker">Data</span>
           <h2>25 Iulie 2026</h2>
         </section>
 
-        <section class="invite-section location-section">
+        <section class="invite-section location-section intro-item intro-delay-5">
           <span class="section-kicker">Cununia oficială</span>
           <h2>Mangalia - Casa Căsătoriilor</h2>
           <p>Ora 16:00</p>
@@ -321,7 +325,7 @@ function renderInvitationPage(invitation, photos) {
           </div>
         </section>
 
-        <section class="invite-section location-section">
+        <section class="invite-section location-section intro-item intro-delay-6">
           <span class="section-kicker">Cina festivă</span>
           <h2>Vama Veche - Sandalandia</h2>
           <p>Ora 18:00</p>
@@ -331,7 +335,7 @@ function renderInvitationPage(invitation, photos) {
           </div>
         </section>
 
-        <form id="rsvpForm" class="rsvp-form">
+        <form id="rsvpForm" class="rsvp-form intro-item intro-delay-7">
           <fieldset>
             <legend>Vii la cununia noastră?</legend>
 
