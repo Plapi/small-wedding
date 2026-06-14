@@ -420,6 +420,7 @@ function createRsvpEmailSubmission({
   guestName,
   answer,
   partySize,
+  accommodationEnabled,
   accommodationRequested,
 }) {
   const accessKey = getWeb3FormsAccessKey(req);
@@ -429,6 +430,8 @@ function createRsvpEmailSubmission({
   }
 
   const readableAnswer = answer === "yes" ? "Da, vin" : "Nu pot ajunge";
+  const readableAccommodation =
+    answer === "yes" && accommodationEnabled ? (accommodationRequested ? "Da" : "Nu") : "Nu se aplică";
 
   return {
     access_key: accessKey,
@@ -440,7 +443,8 @@ function createRsvpEmailSubmission({
       `Invitat: ${guestName}`,
       `Raspuns: ${readableAnswer}`,
       `Persoane: ${partySize}`,
-      `Cazare: ${accommodationRequested ? "Da" : "Nu"}`,
+      `Cazare disponibila pentru invitatie: ${accommodationEnabled ? "Da" : "Nu"}`,
+      `Cazare solicitata: ${readableAccommodation}`,
       `Cheie invitatie: ${inviteKey}`,
       `Trimis la: ${new Date().toLocaleString("ro-RO", { timeZone: "Europe/Bucharest" })}`,
     ].join("\n"),
@@ -480,6 +484,7 @@ app.post("/api/rsvp", async (req, res) => {
         guestName: invitation.guest_name,
         answer,
         partySize,
+        accommodationEnabled: Boolean(invitation.accommodation_enabled),
         accommodationRequested,
       })
     : null;

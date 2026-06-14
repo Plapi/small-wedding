@@ -489,10 +489,12 @@ function renderInvitationPage(invitation, photos) {
 
   form.onchange = () => {
     const answer = new FormData(form).get("answer");
+    const accommodationAnswer = new FormData(form).get("accommodation_requested");
     const followup = document.querySelector("#rsvpFollowup");
     const partySizeField = document.querySelector("#partySizeField");
     const partySizeSelect = document.querySelector("#partySize");
     const accommodationSection = document.querySelector("#accommodationSection");
+    const needsAccommodationAnswer = answer === "yes" && Boolean(accommodationSection);
 
     followup.classList.toggle("is-visible", Boolean(answer));
     followup.setAttribute("aria-hidden", answer ? "false" : "true");
@@ -501,7 +503,7 @@ function renderInvitationPage(invitation, photos) {
     if (accommodationSection) {
       accommodationSection.classList.toggle("is-hidden", answer !== "yes");
     }
-    submitBtn.disabled = !answer;
+    submitBtn.disabled = !answer || (needsAccommodationAnswer && !accommodationAnswer);
 
     if (answer && answer !== previousAnswer) {
       triggerEmojiRain(answer);
