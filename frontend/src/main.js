@@ -309,6 +309,11 @@ async function adminRequest(path, options = {}) {
 }
 
 function renderInvitationPage(invitation, photos) {
+  const isSingleGuest = Number(invitation.party_size || 1) === 1;
+  const guestMessage = isSingleGuest
+    ? "Ne-ar bucura să fii alături de noi într-o zi simplă, caldă și aproape de mare."
+    : "Ne-ar bucura să fiți alături de noi într-o zi simplă, caldă și aproape de mare.";
+
   app.innerHTML = `
     <main class="invite-page has-intro">
       <div class="intro-heart" aria-hidden="true">
@@ -332,7 +337,7 @@ function renderInvitationPage(invitation, photos) {
 
         <div class="guest-note intro-item intro-delay-3">
           <p>Bună, ${escapeHtml(invitation.guest_name)}!</p>
-          <p>Ne-ar bucura să fii alături de noi, cu nisip sub tălpi și mare aproape.</p>
+          <p>${guestMessage}</p>
         </div>
 
         <section class="invite-section story-section intro-item intro-delay-4">
