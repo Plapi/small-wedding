@@ -690,20 +690,44 @@ function renderAdminLogin(message = "") {
   };
 }
 
+function formatAdminCompactMeta(invitation) {
+  const items = [
+    `${formatAnswer(invitation.answer)} · ${invitation.party_size || 1} persoane`,
+  ];
+
+  if (invitation.accommodation_enabled) {
+    items.push(invitation.accommodation_requested ? "Cere cazare" : "Fără cazare");
+  }
+
+  if (invitation.notes) {
+    items.push("Are mențiuni");
+  }
+
+  if (invitation.answered_at) {
+    items.push(`Răspuns: ${formatDate(invitation.answered_at)}`);
+  }
+
+  return items.join(" · ");
+}
+
 function renderAdminDashboard({ summary, invitations }, settings) {
   const cards = invitations
-    .map(
-      (invitation) => `
+    .map((invitation) => {
+      const cardId = `invitationDetails-${invitation.id}`;
+
+      return `
         <article class="invitation-card ${getAnswerStatusClass(invitation.answer)}" data-id="${invitation.id}" draggable="true">
           <header class="invitation-card-header">
             <button class="drag-handle" type="button" aria-label="Mută invitația">Mută</button>
-            <div>
+            <div class="invitation-card-title">
               <h3>${escapeHtml(invitation.guest_name)}</h3>
-              <p>${formatAnswer(invitation.answer)} · ${invitation.party_size || 1} persoane</p>
+              <p>${escapeHtml(formatAdminCompactMeta(invitation))}</p>
             </div>
+            <button class="ghost-btn invitation-toggle-btn" type="button" aria-expanded="false" aria-controls="${cardId}">Detalii</button>
           </header>
 
-          <div class="invitation-card-grid">
+          <div id="${cardId}" class="invitation-card-details" hidden>
+            <div class="invitation-card-grid">
             <label>
               Nume invitat
               <input class="table-input" name="guest_name" value="${escapeHtml(invitation.guest_name)}" />
@@ -749,18 +773,19 @@ function renderAdminDashboard({ summary, invitations }, settings) {
               Mențiuni
               <textarea class="table-input" name="notes" rows="3" placeholder="Ex: alergii, preferințe, alte detalii">${escapeHtml(invitation.notes || "")}</textarea>
             </label>
-          </div>
-
-          <footer class="invitation-card-footer">
-            <span>Răspuns la: ${formatDate(invitation.answered_at)}</span>
-            <div class="row-actions">
-              <button class="save-row-btn" type="button">Salvează</button>
-              <button class="danger-btn delete-row-btn" type="button">Șterge</button>
             </div>
-          </footer>
+
+            <footer class="invitation-card-footer">
+              <span>Răspuns la: ${formatDate(invitation.answered_at)}</span>
+              <div class="row-actions">
+                <button class="save-row-btn" type="button">Salvează</button>
+                <button class="danger-btn delete-row-btn" type="button">Șterge</button>
+              </div>
+            </footer>
+          </div>
         </article>
-      `
-    )
+      `;
+    })
     .join("");
 
   app.innerHTML = `
@@ -924,6 +949,20 @@ function renderAdminDashboard({ summary, invitations }, settings) {
         alert("Linkul nu a putut fi copiat.");
       } finally {
         button.disabled = false;
+      }
+    };
+  });
+
+  document.querySelectorAll(".invitation-toggle-btn").forEach((button) => {
+    button.onclick = () => {
+      const details = document.querySelector(`#${button.getAttribute("aria-controls")}`);
+      const isExpanded = button.getAttribute("aria-expanded") === "true";
+
+      button.setAttribute("aria-expanded", String(!isExpanded));
+      button.textContent = isExpanded ? "Detalii" : "Închide";
+
+      if (details) {
+        details.hidden = isExpanded;
       }
     };
   });

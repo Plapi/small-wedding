@@ -228,11 +228,12 @@ code {
 .invite-card::before {
   content: "";
   display: block;
-  width: 72px;
-  height: 5px;
-  margin: 0 auto 22px;
-  border-radius: 999px;
-  background: linear-gradient(90deg, var(--sand-deep), var(--sea), var(--leaf));
+  width: min(360px, 82%);
+  aspect-ratio: 800 / 202;
+  margin: 0 auto 18px;
+  background: linear-gradient(90deg, #69b8bd 0%, var(--sea) 45%, #1f6f7a 100%);
+  mask: url("/decorations/heart-separator.png") center / contain no-repeat;
+  -webkit-mask: url("/decorations/heart-separator.png") center / contain no-repeat;
 }
 
 .eyebrow {
@@ -1067,7 +1068,7 @@ textarea.table-input,
   overflow: hidden;
   border: 1px solid var(--border);
   border-radius: 8px;
-  padding: 18px;
+  padding: 14px 16px;
   background: var(--paper);
   box-shadow: 0 10px 30px rgba(79, 61, 39, 0.08);
 }
@@ -1124,10 +1125,9 @@ textarea.table-input,
 
 .invitation-card-header {
   display: grid;
-  grid-template-columns: auto 1fr;
+  grid-template-columns: auto minmax(0, 1fr) auto;
   gap: 12px;
-  align-items: start;
-  margin-bottom: 16px;
+  align-items: center;
 }
 
 .invitation-card-header h3 {
@@ -1138,6 +1138,13 @@ textarea.table-input,
 
 .invitation-card-header p {
   margin: 3px 0 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.invitation-card-title {
+  min-width: 0;
 }
 
 .drag-handle {
@@ -1148,6 +1155,18 @@ textarea.table-input,
   background: rgba(234, 217, 189, 0.52);
   font-weight: 800;
   cursor: grab;
+}
+
+.invitation-toggle-btn {
+  white-space: nowrap;
+}
+
+.invitation-card-details {
+  margin-top: 16px;
+}
+
+.invitation-card-details[hidden] {
+  display: none;
 }
 
 .invitation-card-grid {
