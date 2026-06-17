@@ -720,6 +720,50 @@ code {
   color: #a24532;
 }
 
+.thank-you-section {
+  display: grid;
+  justify-items: center;
+  gap: 10px;
+  margin: clamp(38px, 8vw, 68px) auto 4px;
+  color: var(--ink);
+  opacity: 0;
+  transform: translateY(28px) scale(0.98);
+  transition:
+    opacity 800ms ease,
+    transform 800ms cubic-bezier(0.18, 0.86, 0.24, 1);
+}
+
+.thank-you-section.is-visible {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+}
+
+.thank-you-heart {
+  display: inline-grid;
+  place-items: center;
+  width: 54px;
+  height: 54px;
+  border: 1px solid rgba(45, 136, 147, 0.22);
+  border-radius: 50%;
+  color: var(--sea);
+  background: rgba(217, 240, 239, 0.56);
+  box-shadow: 0 14px 34px rgba(45, 136, 147, 0.15);
+  font-size: 1.9rem;
+  line-height: 1;
+}
+
+.thank-you-section.is-visible .thank-you-heart {
+  animation: thankYouHeartBeat 950ms ease both;
+}
+
+.thank-you-section p {
+  margin: 0;
+  color: var(--ink);
+  font-family: "Cormorant Garamond", Georgia, serif;
+  font-size: clamp(2rem, 8vw, 3.6rem);
+  font-weight: 700;
+}
+
 .emoji-rain {
   position: fixed;
   inset: 0;
@@ -1286,6 +1330,25 @@ textarea.table-input,
   }
 }
 
+@keyframes thankYouHeartBeat {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+
+  24% {
+    transform: scale(1.18);
+  }
+
+  44% {
+    transform: scale(0.94);
+  }
+
+  66% {
+    transform: scale(1.1);
+  }
+}
+
 @keyframes emojiFall {
   0% {
     opacity: 0;
@@ -1308,9 +1371,14 @@ textarea.table-input,
   }
 
   .intro-item,
-  .music-toggle {
+  .music-toggle,
+  .thank-you-section {
     opacity: 1;
     transform: none;
+    animation: none;
+  }
+
+  .thank-you-section.is-visible .thank-you-heart {
     animation: none;
   }
 

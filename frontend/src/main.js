@@ -69,6 +69,10 @@ function renderPartySizeOptions(selectedValue = 1) {
     .join("");
 }
 
+function getAccommodationDeclineLabel(partySize = 1) {
+  return Number(partySize) > 1 ? "Nu, ne descurcăm" : "Nu, mă descurc";
+}
+
 async function loadInvitePhotos() {
   try {
     const response = await fetch("/invite-photos/photos.json");
@@ -413,8 +417,8 @@ function renderInvitationPage(invitation, photos) {
           <div class="location-layout">
             <div class="location-copy">
               <span class="section-kicker">Ținută</span>
-              <h2>Alb, lejer, de vară</h2>
-              <p>Nu ne dorim o ținută festivă strictă. Ne-ar bucura ca fiecare să poarte ceva alb, dacă are chef și îi vine natural, dar nu este obligatoriu. O cămașă albă, o rochie lejeră sau ceva casual de vară sunt mai mult decât potrivite.</p>
+              <h2>Relaxat, de vară</h2>
+              <p>Nu există un cod vestimentar strict – cel mai important este să vă simțiți confortabil și să vă bucurați de seară alături de noi. O rochie lejeră de vară, o cămașă deschisă la culoare sau o ținută casual se vor potrivi perfect cu atmosfera evenimentului.</p>
             </div>
             <img class="location-photo dress-code-photo" src="/dress-code/white-summer-outfit.webp" alt="Ținută albă lejeră de vară" loading="lazy" />
           </div>
@@ -461,7 +465,7 @@ function renderInvitationPage(invitation, photos) {
                       </label>
                       <label>
                         <input type="radio" name="accommodation_requested" value="false" />
-                        <span>Nu</span>
+                        <span id="accommodationDeclineLabel">${getAccommodationDeclineLabel(invitation.party_size)}</span>
                       </label>
                     </div>
                   </div>
@@ -478,6 +482,11 @@ function renderInvitationPage(invitation, photos) {
             <p id="status" class="status" role="status" aria-live="polite"></p>
           </div>
         </form>
+
+        <section id="thankYouSection" class="thank-you-section" aria-label="Mulțumire">
+          <span class="thank-you-heart" aria-hidden="true">♥</span>
+          <p>Vă mulțumim!</p>
+        </section>
       </section>
     </main>
   `;
@@ -490,6 +499,7 @@ function renderInvitationPage(invitation, photos) {
     startPhotoStrip(photoTrack);
   }
   setupMusicPlayer();
+  setupThankYouReveal();
   let previousAnswer = new FormData(form).get("answer");
 
   form.onchange = () => {
@@ -499,6 +509,7 @@ function renderInvitationPage(invitation, photos) {
     const partySizeField = document.querySelector("#partySizeField");
     const partySizeSelect = document.querySelector("#partySize");
     const accommodationSection = document.querySelector("#accommodationSection");
+    const accommodationDeclineLabel = document.querySelector("#accommodationDeclineLabel");
     const notesField = document.querySelector("#notesField");
     const notesInput = document.querySelector("#notes");
     const needsAccommodationAnswer = answer === "yes" && Boolean(accommodationSection);
@@ -511,6 +522,9 @@ function renderInvitationPage(invitation, photos) {
     notesInput.disabled = answer !== "yes";
     if (accommodationSection) {
       accommodationSection.classList.toggle("is-hidden", answer !== "yes");
+    }
+    if (accommodationDeclineLabel) {
+      accommodationDeclineLabel.textContent = getAccommodationDeclineLabel(partySizeSelect.value);
     }
     submitBtn.disabled = !answer || (needsAccommodationAnswer && !accommodationAnswer);
 
@@ -530,6 +544,35 @@ function renderInvitationPage(invitation, photos) {
 
     await sendAnswer(answer);
   };
+}
+
+function setupThankYouReveal() {
+  const thankYouSection = document.querySelector("#thankYouSection");
+
+  if (!thankYouSection) {
+    return;
+  }
+
+  if (!("IntersectionObserver" in window)) {
+    thankYouSection.classList.add("is-visible");
+    return;
+  }
+
+  const observer = new IntersectionObserver(
+    ([entry]) => {
+      if (!entry.isIntersecting) {
+        return;
+      }
+
+      thankYouSection.classList.add("is-visible");
+      observer.disconnect();
+    },
+    {
+      threshold: 0.45,
+    }
+  );
+
+  observer.observe(thankYouSection);
 }
 
 async function loadInvitation() {
