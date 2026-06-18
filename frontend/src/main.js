@@ -493,7 +493,7 @@ function renderInvitationPage(invitation, photos) {
         <div class="flower-modal-backdrop" data-close-flower-modal></div>
         <section class="flower-modal-card">
           <button class="flower-modal-close" type="button" aria-label="Închide mesajul" data-close-flower-modal>×</button>
-          <div class="flower-modal-art" aria-hidden="true">✿</div>
+          <img class="flower-modal-art" src="/decorations/single-flower.png" alt="" aria-hidden="true" />
           <p id="flowerModalLabel" class="section-kicker">Un fir de floare</p>
           <p>Un singur lucru ne-am dori... în locul buchetelor de flori, ne-ar bucura mai mult dacă fiecare ar veni cu un singur fir de floare. La final, împreună, vom forma cel mai frumos buchet creat de toți cei dragi nouă.</p>
         </section>
