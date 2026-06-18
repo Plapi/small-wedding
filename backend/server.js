@@ -41,6 +41,20 @@ db.exec(`
     key TEXT PRIMARY KEY,
     value TEXT NOT NULL
   );
+
+  CREATE TABLE IF NOT EXISTS dining_tables (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT NOT NULL,
+    capacity INTEGER NOT NULL,
+    sort_order INTEGER NOT NULL DEFAULT 0
+  );
+
+  CREATE TABLE IF NOT EXISTS table_assignments (
+    invitation_id INTEGER PRIMARY KEY,
+    table_id INTEGER NOT NULL,
+    FOREIGN KEY (invitation_id) REFERENCES invitations(id) ON DELETE CASCADE,
+    FOREIGN KEY (table_id) REFERENCES dining_tables(id) ON DELETE CASCADE
+  );
 `);
 
 db.prepare("INSERT OR IGNORE INTO app_settings (key, value) VALUES (?, ?)").run(
@@ -117,6 +131,16 @@ function normalizeBoolean(value) {
 
 function normalizeNotes(value) {
   return String(value || "").trim().slice(0, 1000);
+}
+
+function normalizeTableCapacity(capacity) {
+  const parsed = Number.parseInt(capacity, 10);
+
+  if (Number.isNaN(parsed)) {
+    return 2;
+  }
+
+  return Math.min(Math.max(parsed, 2), 20);
 }
 
 function getInvitationById(id) {
@@ -377,6 +401,160 @@ app.delete("/api/admin/invitations/:id", (req, res) => {
   if (result.changes === 0) {
     return res.status(404).json({ error: "Invitația nu există" });
   }
+
+  res.json({ success: true });
+});
+
+function getSeatingData() {
+  const guests = db
+    .prepare(
+      `SELECT invitations.id, invitations.guest_name, invitations.party_size,
+              invitations.accommodation_requested, invitations.notes,
+              table_assignments.table_id
+       FROM invitations
+       LEFT JOIN table_assignments ON table_assignments.invitation_id = invitations.id
+       WHERE invitations.answer = 'yes'
+       ORDER BY invitations.sort_order ASC, invitations.id ASC`
+    )
+    .all();
+  const tables = db
+    .prepare(
+      `SELECT id, name, capacity, sort_order
+       FROM dining_tables
+       ORDER BY sort_order ASC, id ASC`
+    )
+    .all();
+
+  return { guests, tables };
+}
+
+function getTableOccupancy(tableId, excludedInvitationId = null) {
+  return db
+    .prepare(
+      `SELECT COALESCE(SUM(invitations.party_size), 0) AS occupied
+       FROM table_assignments
+       JOIN invitations ON invitations.id = table_assignments.invitation_id
+       WHERE table_assignments.table_id = ?
+         AND (? IS NULL OR table_assignments.invitation_id != ?)`
+    )
+    .get(tableId, excludedInvitationId, excludedInvitationId).occupied;
+}
+
+app.get("/api/admin/seating", (req, res) => {
+  if (!isAdminRequest(req)) {
+    return res.status(401).json({ error: "Unauthorized" });
+  }
+
+  res.json(getSeatingData());
+});
+
+app.post("/api/admin/tables", (req, res) => {
+  if (!isAdminRequest(req)) {
+    return res.status(401).json({ error: "Unauthorized" });
+  }
+
+  const name = String(req.body.name || "").trim();
+  const capacity = normalizeTableCapacity(req.body.capacity);
+  const sortOrder = db.prepare("SELECT COALESCE(MAX(sort_order), 0) + 1 AS next_order FROM dining_tables").get()
+    .next_order;
+
+  if (!name) {
+    return res.status(400).json({ error: "Numele mesei este obligatoriu" });
+  }
+
+  const result = db
+    .prepare("INSERT INTO dining_tables (name, capacity, sort_order) VALUES (?, ?, ?)")
+    .run(name, capacity, sortOrder);
+  const table = db.prepare("SELECT id, name, capacity, sort_order FROM dining_tables WHERE id = ?").get(result.lastInsertRowid);
+
+  res.status(201).json({ success: true, table });
+});
+
+app.put("/api/admin/tables/:id", (req, res) => {
+  if (!isAdminRequest(req)) {
+    return res.status(401).json({ error: "Unauthorized" });
+  }
+
+  const id = Number(req.params.id);
+  const name = String(req.body.name || "").trim();
+  const capacity = normalizeTableCapacity(req.body.capacity);
+  const occupied = getTableOccupancy(id);
+
+  if (!name) {
+    return res.status(400).json({ error: "Numele mesei este obligatoriu" });
+  }
+
+  if (capacity < occupied) {
+    return res.status(400).json({ error: `Masa are deja ${occupied} persoane repartizate.` });
+  }
+
+  const result = db.prepare("UPDATE dining_tables SET name = ?, capacity = ? WHERE id = ?").run(name, capacity, id);
+
+  if (result.changes === 0) {
+    return res.status(404).json({ error: "Masa nu există" });
+  }
+
+  res.json({ success: true });
+});
+
+app.delete("/api/admin/tables/:id", (req, res) => {
+  if (!isAdminRequest(req)) {
+    return res.status(401).json({ error: "Unauthorized" });
+  }
+
+  const id = Number(req.params.id);
+  const removeAssignments = db.prepare("DELETE FROM table_assignments WHERE table_id = ?");
+  const removeTable = db.prepare("DELETE FROM dining_tables WHERE id = ?");
+  const remove = db.transaction(() => {
+    removeAssignments.run(id);
+    return removeTable.run(id);
+  });
+  const result = remove();
+
+  if (result.changes === 0) {
+    return res.status(404).json({ error: "Masa nu există" });
+  }
+
+  res.json({ success: true });
+});
+
+app.put("/api/admin/seating/assignments", (req, res) => {
+  if (!isAdminRequest(req)) {
+    return res.status(401).json({ error: "Unauthorized" });
+  }
+
+  const invitationId = Number(req.body.invitation_id);
+  const tableId = req.body.table_id ? Number(req.body.table_id) : null;
+  const invitation = db
+    .prepare("SELECT id, party_size FROM invitations WHERE id = ? AND answer = 'yes'")
+    .get(invitationId);
+
+  if (!invitation) {
+    return res.status(404).json({ error: "Invitatul confirmat nu există" });
+  }
+
+  if (!tableId) {
+    db.prepare("DELETE FROM table_assignments WHERE invitation_id = ?").run(invitationId);
+    return res.json({ success: true });
+  }
+
+  const table = db.prepare("SELECT id, capacity FROM dining_tables WHERE id = ?").get(tableId);
+
+  if (!table) {
+    return res.status(404).json({ error: "Masa nu există" });
+  }
+
+  const occupied = getTableOccupancy(tableId, invitationId);
+
+  if (occupied + invitation.party_size > table.capacity) {
+    return res.status(400).json({ error: "Nu mai sunt suficiente locuri la această masă." });
+  }
+
+  db.prepare(
+    `INSERT INTO table_assignments (invitation_id, table_id)
+     VALUES (?, ?)
+     ON CONFLICT(invitation_id) DO UPDATE SET table_id = excluded.table_id`
+  ).run(invitationId, tableId);
 
   res.json({ success: true });
 });

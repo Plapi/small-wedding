@@ -35,6 +35,16 @@ function normalizeNotes(value) {
   return String(value || "").trim().slice(0, 1000);
 }
 
+function normalizeTableCapacity(capacity) {
+  const parsed = Number.parseInt(capacity, 10);
+
+  if (Number.isNaN(parsed)) {
+    return 2;
+  }
+
+  return Math.min(Math.max(parsed, 2), 20);
+}
+
 function generateInviteKey() {
   const bytes = new Uint8Array(9);
   crypto.getRandomValues(bytes);
@@ -361,6 +371,157 @@ async function deleteAdminInvitation(request, env, id) {
   return json({ success: true });
 }
 
+async function getTableOccupancy(env, tableId, excludedInvitationId = null) {
+  const row = await env.DB.prepare(
+    `SELECT COALESCE(SUM(invitations.party_size), 0) AS occupied
+     FROM table_assignments
+     JOIN invitations ON invitations.id = table_assignments.invitation_id
+     WHERE table_assignments.table_id = ?
+       AND (? IS NULL OR table_assignments.invitation_id != ?)`
+  )
+    .bind(tableId, excludedInvitationId, excludedInvitationId)
+    .first();
+
+  return row?.occupied || 0;
+}
+
+async function getAdminSeating(request, env) {
+  if (!isAdminRequest(request, env)) {
+    return json({ error: "Unauthorized" }, 401);
+  }
+
+  const { results: guests } = await env.DB.prepare(
+    `SELECT invitations.id, invitations.guest_name, invitations.party_size,
+            invitations.accommodation_requested, invitations.notes,
+            table_assignments.table_id
+     FROM invitations
+     LEFT JOIN table_assignments ON table_assignments.invitation_id = invitations.id
+     WHERE invitations.answer = 'yes'
+     ORDER BY invitations.sort_order ASC, invitations.id ASC`
+  ).all();
+  const { results: tables } = await env.DB.prepare(
+    `SELECT id, name, capacity, sort_order
+     FROM dining_tables
+     ORDER BY sort_order ASC, id ASC`
+  ).all();
+
+  return json({ guests, tables });
+}
+
+async function createAdminTable(request, env) {
+  if (!isAdminRequest(request, env)) {
+    return json({ error: "Unauthorized" }, 401);
+  }
+
+  const body = await readJson(request);
+  const name = String(body.name || "").trim();
+  const capacity = normalizeTableCapacity(body.capacity);
+
+  if (!name) {
+    return json({ error: "Numele mesei este obligatoriu" }, 400);
+  }
+
+  const nextOrder = await env.DB.prepare("SELECT COALESCE(MAX(sort_order), 0) + 1 AS next_order FROM dining_tables").first();
+  const result = await env.DB.prepare("INSERT INTO dining_tables (name, capacity, sort_order) VALUES (?, ?, ?)")
+    .bind(name, capacity, nextOrder.next_order)
+    .run();
+  const table = await env.DB.prepare("SELECT id, name, capacity, sort_order FROM dining_tables WHERE id = ?")
+    .bind(result.meta.last_row_id)
+    .first();
+
+  return json({ success: true, table }, 201);
+}
+
+async function updateAdminTable(request, env, id) {
+  if (!isAdminRequest(request, env)) {
+    return json({ error: "Unauthorized" }, 401);
+  }
+
+  const body = await readJson(request);
+  const name = String(body.name || "").trim();
+  const capacity = normalizeTableCapacity(body.capacity);
+  const occupied = await getTableOccupancy(env, id);
+
+  if (!name) {
+    return json({ error: "Numele mesei este obligatoriu" }, 400);
+  }
+
+  if (capacity < occupied) {
+    return json({ error: `Masa are deja ${occupied} persoane repartizate.` }, 400);
+  }
+
+  const result = await env.DB.prepare("UPDATE dining_tables SET name = ?, capacity = ? WHERE id = ?")
+    .bind(name, capacity, id)
+    .run();
+
+  if (result.meta.changes === 0) {
+    return json({ error: "Masa nu există" }, 404);
+  }
+
+  return json({ success: true });
+}
+
+async function deleteAdminTable(request, env, id) {
+  if (!isAdminRequest(request, env)) {
+    return json({ error: "Unauthorized" }, 401);
+  }
+
+  const result = await env.DB.batch([
+    env.DB.prepare("DELETE FROM table_assignments WHERE table_id = ?").bind(id),
+    env.DB.prepare("DELETE FROM dining_tables WHERE id = ?").bind(id),
+  ]);
+
+  if (result[1].meta.changes === 0) {
+    return json({ error: "Masa nu există" }, 404);
+  }
+
+  return json({ success: true });
+}
+
+async function updateTableAssignment(request, env) {
+  if (!isAdminRequest(request, env)) {
+    return json({ error: "Unauthorized" }, 401);
+  }
+
+  const body = await readJson(request);
+  const invitationId = Number(body.invitation_id);
+  const tableId = body.table_id ? Number(body.table_id) : null;
+  const invitation = await env.DB.prepare("SELECT id, party_size FROM invitations WHERE id = ? AND answer = 'yes'")
+    .bind(invitationId)
+    .first();
+
+  if (!invitation) {
+    return json({ error: "Invitatul confirmat nu există" }, 404);
+  }
+
+  if (!tableId) {
+    await env.DB.prepare("DELETE FROM table_assignments WHERE invitation_id = ?").bind(invitationId).run();
+    return json({ success: true });
+  }
+
+  const table = await env.DB.prepare("SELECT id, capacity FROM dining_tables WHERE id = ?").bind(tableId).first();
+
+  if (!table) {
+    return json({ error: "Masa nu există" }, 404);
+  }
+
+  const occupied = await getTableOccupancy(env, tableId, invitationId);
+
+  if (occupied + invitation.party_size > table.capacity) {
+    return json({ error: "Nu mai sunt suficiente locuri la această masă." }, 400);
+  }
+
+  await env.DB.prepare(
+    `INSERT INTO table_assignments (invitation_id, table_id)
+     VALUES (?, ?)
+     ON CONFLICT(invitation_id) DO UPDATE SET table_id = excluded.table_id`
+  )
+    .bind(invitationId, tableId)
+    .run();
+
+  return json({ success: true });
+}
+
 async function getAdminSettings(request, env) {
   if (!isAdminRequest(request, env)) {
     return json({ error: "Unauthorized" }, 401);
@@ -451,6 +612,27 @@ async function handleApi(request, env) {
 
   if (method === "PUT" && path === "/api/admin/invitations/reorder") {
     return reorderAdminInvitations(request, env);
+  }
+
+  if (method === "GET" && path === "/api/admin/seating") {
+    return getAdminSeating(request, env);
+  }
+
+  if (method === "POST" && path === "/api/admin/tables") {
+    return createAdminTable(request, env);
+  }
+
+  if (method === "PUT" && path === "/api/admin/seating/assignments") {
+    return updateTableAssignment(request, env);
+  }
+
+  const tableMatch = path.match(/^\/api\/admin\/tables\/(\d+)$/);
+  if (tableMatch && method === "PUT") {
+    return updateAdminTable(request, env, Number(tableMatch[1]));
+  }
+
+  if (tableMatch && method === "DELETE") {
+    return deleteAdminTable(request, env, Number(tableMatch[1]));
   }
 
   const regenerateMatch = path.match(/^\/api\/admin\/invitations\/(\d+)\/regenerate-key$/);

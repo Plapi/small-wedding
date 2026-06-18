@@ -851,7 +851,10 @@ function renderAdminDashboard({ summary, invitations }, settings) {
           <h1>Invitații</h1>
           <p>Răspunsurile primite pentru Adrian & Liliana.</p>
         </div>
-        <button id="logoutBtn" type="button">Ieșire</button>
+        <div class="admin-header-actions">
+          <a class="ghost-link" href="/admin/tables">Așezare la mese</a>
+          <button id="logoutBtn" type="button">Ieșire</button>
+        </div>
       </section>
 
       <section class="summary-grid" aria-label="Rezumat invitații">
@@ -1163,6 +1166,259 @@ async function saveInvitationOrder(list) {
   }
 }
 
+function getTableOccupancyFromGuests(tableId, guests) {
+  return guests
+    .filter((guest) => Number(guest.table_id) === Number(tableId))
+    .reduce((total, guest) => total + Number(guest.party_size || 1), 0);
+}
+
+function renderTableOptions(tables, selectedTableId) {
+  return [
+    `<option value="" ${!selectedTableId ? "selected" : ""}>Fără masă</option>`,
+    ...tables.map(
+      (table) =>
+        `<option value="${table.id}" ${Number(selectedTableId) === Number(table.id) ? "selected" : ""}>${escapeHtml(table.name)}</option>`
+    ),
+  ].join("");
+}
+
+function renderSeatingGuest(guest, tables) {
+  const details = [
+    `${guest.party_size || 1} persoane`,
+    guest.accommodation_requested ? "Cazare" : "",
+    guest.notes ? "Mențiuni" : "",
+  ].filter(Boolean).join(" · ");
+
+  return `
+    <article class="seating-guest" draggable="true" data-invitation-id="${guest.id}">
+      <div>
+        <strong>${escapeHtml(guest.guest_name)}</strong>
+        <span>${escapeHtml(details)}</span>
+      </div>
+      <select class="seating-select" aria-label="Alege masa pentru ${escapeHtml(guest.guest_name)}">
+        ${renderTableOptions(tables, guest.table_id)}
+      </select>
+    </article>
+  `;
+}
+
+function renderAdminSeatingPage({ guests, tables }) {
+  const unassignedGuests = guests.filter((guest) => !guest.table_id);
+  const assignedGuestIds = new Set(guests.filter((guest) => guest.table_id).map((guest) => Number(guest.id)));
+  const unassignedCount = unassignedGuests.reduce((total, guest) => total + Number(guest.party_size || 1), 0);
+  const assignedCount = guests
+    .filter((guest) => assignedGuestIds.has(Number(guest.id)))
+    .reduce((total, guest) => total + Number(guest.party_size || 1), 0);
+  const tableCards = tables
+    .map((table) => {
+      const tableGuests = guests.filter((guest) => Number(guest.table_id) === Number(table.id));
+      const occupied = getTableOccupancyFromGuests(table.id, guests);
+      const isFull = occupied >= Number(table.capacity);
+
+      return `
+        <section class="seating-table ${isFull ? "is-full" : ""}" data-table-id="${table.id}">
+          <header>
+            <div>
+              <input class="table-name-input" name="table_name" value="${escapeHtml(table.name)}" aria-label="Nume masă" />
+              <p>${occupied}/${table.capacity} persoane</p>
+            </div>
+            <div class="seating-table-actions">
+              <input class="table-capacity-input" name="capacity" type="number" min="2" max="20" value="${table.capacity}" aria-label="Capacitate masă" />
+              <button class="ghost-btn save-table-btn" type="button">Salvează</button>
+              <button class="danger-btn delete-table-btn" type="button">Șterge</button>
+            </div>
+          </header>
+          <div class="table-drop-zone" data-table-id="${table.id}">
+            ${tableGuests.map((guest) => renderSeatingGuest(guest, tables)).join("") || '<p class="empty-state">Trage invitați aici.</p>'}
+          </div>
+        </section>
+      `;
+    })
+    .join("");
+
+  app.innerHTML = `
+    <main class="admin-page">
+      <section class="admin-header">
+        <div>
+          <h1>Așezare la mese</h1>
+          <p>Repartizează invitații care au confirmat că vin.</p>
+        </div>
+        <div class="admin-header-actions">
+          <a class="ghost-link" href="/admin">Înapoi la invitații</a>
+          <button id="logoutBtn" type="button">Ieșire</button>
+        </div>
+      </section>
+
+      <section class="summary-grid seating-summary" aria-label="Rezumat mese">
+        <div class="summary-card summary-yes"><strong>${guests.length}</strong><span>Invitații vin</span></div>
+        <div class="summary-card summary-guests"><strong>${assignedCount}</strong><span>Persoane așezate</span></div>
+        <div class="summary-card summary-pending"><strong>${unassignedCount}</strong><span>Persoane fără masă</span></div>
+        <div class="summary-card summary-total"><strong>${tables.length}</strong><span>Mese</span></div>
+      </section>
+
+      <form id="addTableForm" class="admin-panel seating-add-panel">
+        <h2>Adaugă masă</h2>
+        <div class="admin-form-grid">
+          <label>
+            Nume masă
+            <input name="name" required placeholder="Ex: Masa 1" />
+          </label>
+          <label>
+            Locuri
+            <input name="capacity" type="number" min="2" max="20" value="8" required />
+          </label>
+        </div>
+        <div class="admin-panel-actions">
+          <button type="submit">Creează masa</button>
+        </div>
+        <p id="seatingStatus" class="status" role="status" aria-live="polite"></p>
+      </form>
+
+      <section class="seating-board">
+        <aside class="seating-pool">
+          <h2>Fără masă</h2>
+          <div class="table-drop-zone" data-table-id="">
+            ${unassignedGuests.map((guest) => renderSeatingGuest(guest, tables)).join("") || '<p class="empty-state">Toți invitații confirmați sunt așezați.</p>'}
+          </div>
+        </aside>
+
+        <div class="seating-tables">
+          ${tableCards || '<p class="empty-state">Nu există mese încă. Creează prima masă de mai sus.</p>'}
+        </div>
+      </section>
+    </main>
+  `;
+
+  document.querySelector("#logoutBtn").onclick = () => {
+    sessionStorage.removeItem(ADMIN_TOKEN_STORAGE_KEY);
+    renderAdminLogin();
+  };
+
+  document.querySelector("#addTableForm").onsubmit = async (event) => {
+    event.preventDefault();
+    const form = event.currentTarget;
+    const formData = new FormData(form);
+    const status = document.querySelector("#seatingStatus");
+
+    try {
+      await adminRequest("/admin/tables", {
+        method: "POST",
+        body: JSON.stringify({
+          name: formData.get("name"),
+          capacity: formData.get("capacity"),
+        }),
+      });
+      form.reset();
+      form.querySelector('[name="capacity"]').value = 8;
+      status.className = "status status-success";
+      status.textContent = "Masa a fost creată.";
+      await loadAdminSeatingPage();
+    } catch (error) {
+      status.className = "status status-error";
+      status.textContent = error.message;
+    }
+  };
+
+  setupSeatingInteractions();
+}
+
+function setupSeatingInteractions() {
+  document.querySelectorAll(".seating-guest").forEach((guest) => {
+    guest.addEventListener("dragstart", (event) => {
+      guest.classList.add("is-dragging");
+      event.dataTransfer.setData("text/plain", guest.dataset.invitationId);
+    });
+
+    guest.addEventListener("dragend", () => {
+      guest.classList.remove("is-dragging");
+    });
+  });
+
+  document.querySelectorAll(".table-drop-zone").forEach((zone) => {
+    zone.addEventListener("dragover", (event) => {
+      event.preventDefault();
+      zone.classList.add("is-drop-target");
+    });
+
+    zone.addEventListener("dragleave", () => {
+      zone.classList.remove("is-drop-target");
+    });
+
+    zone.addEventListener("drop", async (event) => {
+      event.preventDefault();
+      zone.classList.remove("is-drop-target");
+      const invitationId = event.dataTransfer.getData("text/plain");
+
+      if (invitationId) {
+        await saveTableAssignment(invitationId, zone.dataset.tableId || null);
+      }
+    });
+  });
+
+  document.querySelectorAll(".seating-select").forEach((select) => {
+    select.onchange = async () => {
+      const guest = select.closest(".seating-guest");
+      await saveTableAssignment(guest.dataset.invitationId, select.value || null);
+    };
+  });
+
+  document.querySelectorAll(".save-table-btn").forEach((button) => {
+    button.onclick = async () => {
+      const table = button.closest(".seating-table");
+
+      button.disabled = true;
+      try {
+        await adminRequest(`/admin/tables/${table.dataset.tableId}`, {
+          method: "PUT",
+          body: JSON.stringify({
+            name: table.querySelector('[name="table_name"]').value,
+            capacity: table.querySelector('[name="capacity"]').value,
+          }),
+        });
+        await loadAdminSeatingPage();
+      } catch (error) {
+        alert(error.message);
+        button.disabled = false;
+      }
+    };
+  });
+
+  document.querySelectorAll(".delete-table-btn").forEach((button) => {
+    button.onclick = async () => {
+      const table = button.closest(".seating-table");
+      const tableName = table.querySelector('[name="table_name"]').value;
+
+      if (!confirm(`Ștergi ${tableName}? Invitații de la această masă vor rămâne fără masă.`)) {
+        return;
+      }
+
+      button.disabled = true;
+      try {
+        await adminRequest(`/admin/tables/${table.dataset.tableId}`, { method: "DELETE" });
+        await loadAdminSeatingPage();
+      } catch (error) {
+        alert(error.message);
+        button.disabled = false;
+      }
+    };
+  });
+}
+
+async function saveTableAssignment(invitationId, tableId) {
+  try {
+    await adminRequest("/admin/seating/assignments", {
+      method: "PUT",
+      body: JSON.stringify({
+        invitation_id: invitationId,
+        table_id: tableId,
+      }),
+    });
+    await loadAdminSeatingPage();
+  } catch (error) {
+    alert(error.message);
+  }
+}
+
 async function loadAdminPage() {
   const token = sessionStorage.getItem(ADMIN_TOKEN_STORAGE_KEY);
 
@@ -1196,8 +1452,38 @@ async function loadAdminPage() {
   renderAdminDashboard(dashboard, settings);
 }
 
+async function loadAdminSeatingPage() {
+  const token = sessionStorage.getItem(ADMIN_TOKEN_STORAGE_KEY);
+
+  if (!token) {
+    renderAdminLogin();
+    return;
+  }
+
+  const response = await fetch(`${API_URL}/admin/seating`, {
+    headers: {
+      "x-admin-token": token,
+    },
+  });
+
+  if (response.status === 401) {
+    sessionStorage.removeItem(ADMIN_TOKEN_STORAGE_KEY);
+    renderAdminLogin("Token invalid.");
+    return;
+  }
+
+  if (!response.ok) {
+    renderAdminLogin("Datele pentru mese nu au putut fi încărcate.");
+    return;
+  }
+
+  renderAdminSeatingPage(await response.json());
+}
+
 if (window.location.pathname === "/admin") {
   loadAdminPage();
+} else if (window.location.pathname === "/admin/tables") {
+  loadAdminSeatingPage();
 } else {
   loadInvitation();
 }

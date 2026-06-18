@@ -1,0 +1,13 @@
+CREATE TABLE IF NOT EXISTS dining_tables (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  name TEXT NOT NULL,
+  capacity INTEGER NOT NULL,
+  sort_order INTEGER NOT NULL DEFAULT 0
+);
+
+CREATE TABLE IF NOT EXISTS table_assignments (
+  invitation_id INTEGER PRIMARY KEY,
+  table_id INTEGER NOT NULL,
+  FOREIGN KEY (invitation_id) REFERENCES invitations(id) ON DELETE CASCADE,
+  FOREIGN KEY (table_id) REFERENCES dining_tables(id) ON DELETE CASCADE
+);
